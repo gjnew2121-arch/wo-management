@@ -3,31 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GJet — SM Work Orders</title>
+  <title>GJet — Work Orders</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
-  <style>
-    /* Override accent to orange for GJet */
-    .field input:focus, .field select:focus, .field textarea:focus { border-color: #e8710a; }
-    thead th { background: #fff8f3; }
-    .nav-link.active { color: #e8710a; border-bottom-color: #e8710a; }
-    .btn-save-gjet { background: #e8710a; color: #fff; }
-    .btn-save-gjet:hover { background: #c25e08; }
-    .stat.active { background: #fff3e0; }
-    .wo-num { color: #e8710a; }
-  </style>
 </head>
 <body>
 
 <nav>
-  <a href="home.html" class="nav-logo">
-    <div class="nav-dot-gjet"></div>GJet
-  </a>
-  <a href="gjet.html"  class="nav-link active gjet" data-page="gjet">SM Work Orders</a>
+  <a href="home.html" class="nav-logo"><div class="nav-dot-gjet"></div>GJet</a>
+  <a href="gjet.html" class="nav-link active" data-page="gjet">Work Orders</a>
   <a href="admin.html" class="nav-link" data-page="admin" id="nav-admin" style="display:none">Users</a>
   <div class="nav-right">
-    <span class="nav-user"   id="nav-user"></span>
+    <span class="nav-user" id="nav-user"></span>
     <span class="role-badge" id="nav-role"></span>
     <span class="company-badge company-gjet">GJET</span>
     <button class="btn-signout" id="btn-signout">Sign out</button>
@@ -35,22 +23,22 @@
 </nav>
 
 <!-- STATS -->
-<div class="stats-bar" id="stats-bar">
+<div class="stats-bar">
   <div class="stat" data-filter="OPEN">
     <div class="stat-val" id="count-OPEN">—</div>
     <div class="stat-lbl"><div class="stat-dot" style="background:#9e9e9e"></div>Open WO</div>
   </div>
   <div class="stat" data-filter="CLOSED">
     <div class="stat-val" id="count-CLOSED">—</div>
-    <div class="stat-lbl"><div class="stat-dot" style="background:#4caf50"></div>WO Completed</div>
+    <div class="stat-lbl"><div class="stat-dot" style="background:#2e7d32"></div>WO Completed</div>
   </div>
   <div class="stat" data-filter="DOCS">
     <div class="stat-val" id="count-DOCS">—</div>
-    <div class="stat-lbl"><div class="stat-dot" style="background:#2196f3"></div>Docs in office</div>
+    <div class="stat-lbl"><div class="stat-dot" style="background:#1565c0"></div>Docs in office</div>
   </div>
   <div class="stat" data-filter="CNX">
     <div class="stat-val" id="count-CNX">—</div>
-    <div class="stat-lbl"><div class="stat-dot" style="background:#f44336"></div>Cancelled</div>
+    <div class="stat-lbl"><div class="stat-dot" style="background:#c62828"></div>Cancelled</div>
   </div>
 </div>
 
@@ -62,16 +50,22 @@
   </div>
   <select id="filter-aircraft"><option value="">All aircraft</option></select>
   <select id="filter-year"><option value="">All years</option></select>
+  <select id="filter-status"><option value="">All statuses</option>
+    <option value="OPEN">Open WO</option>
+    <option value="CLOSED">WO Completed</option>
+    <option value="DOCS">Docs in office</option>
+    <option value="CNX">Cancelled</option>
+  </select>
   <span class="record-count" id="record-count"></span>
-  <button class="btn btn-orange" id="btn-new" style="margin-left:auto;display:none">+ New SM WO</button>
+  <button class="btn btn-orange" id="btn-new" style="margin-left:auto;display:none">+ New WO</button>
 </div>
 
 <!-- LEGEND -->
 <div class="legend">
-  <div class="legend-item"><div class="leg-swatch" style="background:#fff;border:1px solid #bbb"></div>Open WO</div>
-  <div class="legend-item"><div class="leg-swatch" style="background:rgba(76,175,80,0.15);border:1px solid #a5d6a7"></div>WO Completed</div>
-  <div class="legend-item"><div class="leg-swatch" style="background:rgba(33,150,243,0.15);border:1px solid #90caf9"></div>WO Completed – Docs in office</div>
-  <div class="legend-item"><div class="leg-swatch" style="background:rgba(244,67,54,0.12);border:1px solid #ef9a9a"></div>Cancelled</div>
+  <div class="legend-item"><div class="leg-swatch" style="background:#fff;border:1.5px solid #ccc"></div>Open WO</div>
+  <div class="legend-item"><div class="leg-swatch" style="background:rgba(76,175,80,0.25);border:1.5px solid #4caf50"></div>WO Completed</div>
+  <div class="legend-item"><div class="leg-swatch" style="background:rgba(33,150,243,0.25);border:1.5px solid #2196f3"></div>WO Completed – Docs in office</div>
+  <div class="legend-item"><div class="leg-swatch" style="background:rgba(244,67,54,0.22);border:1.5px solid #f44336"></div>Cancelled</div>
 </div>
 
 <!-- TABLE -->
@@ -79,19 +73,28 @@
   <table>
     <thead>
       <tr>
-        <th style="width:40px">#</th>
-        <th data-col="wo_number">WO Number ↕</th>
-        <th data-col="issue_date">Date ↕</th>
-        <th data-col="aircraft">Aircraft ↕</th>
-        <th>Description</th>
-        <th data-col="status">Status ↕</th>
-        <th>Entered by</th>
-        <th>Remarks</th>
-        <th style="width:80px"></th>
+        <th style="width:35px">A/A</th>
+        <th data-col="wo_number">WO NUM ↕</th>
+        <th data-col="issue_date">ISSUE DATE ↕</th>
+        <th>DUE LIMIT</th>
+        <th data-col="aircraft">AIRCRAFT ↕</th>
+        <th>ISSUED BY</th>
+        <th>PART 145</th>
+        <th>DESCRIPTION</th>
+        <th>CLOSED DATE</th>
+        <th>CMP/TRXL</th>
+        <th data-col="status">STATUS ↕</th>
+        <th>PKG RCV</th>
+        <th>WP FILED</th>
+        <th>LOCATION</th>
+        <th>CMP LIST</th>
+        <th>FORM M-28</th>
+        <th>ENTERED BY</th>
+        <th>REMARKS</th>
       </tr>
     </thead>
     <tbody id="tbody">
-      <tr><td colspan="9" class="empty-state">Loading…</td></tr>
+      <tr><td colspan="18" class="empty-state">Loading…</td></tr>
     </tbody>
   </table>
 </div>
@@ -104,16 +107,19 @@
 
 <!-- MODAL -->
 <div class="modal-overlay" id="modal">
-  <div class="modal">
+  <div class="modal" style="width:680px">
     <div class="modal-head">
-      <h2 id="modal-title">New SM Work Order</h2>
+      <h2 id="modal-title">New work order</h2>
       <button class="modal-close" id="modal-close">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
         <div class="field"><label>WO Number</label><input id="f-wo" readonly style="background:#f0f0f0;color:#888"></div>
         <div class="field"><label>Issue date</label><input type="date" id="f-date"></div>
-        <div class="field"><label>Aircraft *</label><input id="f-aircraft" placeholder="Aircraft reg."></div>
+        <div class="field"><label>Aircraft *</label><input id="f-aircraft" placeholder="SX-DHB"></div>
+        <div class="field"><label>Issued by</label><input id="f-issued" placeholder="TTS"></div>
+        <div class="field"><label>Part 145</label><input id="f-part145" placeholder="GNJ P-145"></div>
+        <div class="field"><label>Due limit</label><input id="f-due" placeholder="Date / HRS / CLS"></div>
         <div class="field"><label>Status</label>
           <select id="f-status">
             <option value="OPEN">Open</option>
@@ -122,22 +128,29 @@
           </select>
         </div>
         <div class="field"><label>WP Filed</label>
-          <select id="f-wp">
-            <option value="">—</option>
-            <option value="YES">YES</option>
-            <option value="PENDING">PENDING</option>
-          </select>
+          <select id="f-wp"><option value="">—</option><option value="YES">YES</option><option value="PENDING">PENDING</option></select>
+        </div>
+        <div class="field"><label>CMP/TRXL Updated</label>
+          <select id="f-cmp"><option value="">—</option><option value="YES">YES</option><option value="PENDING">PENDING</option></select>
         </div>
         <div class="field"><label>Closed date</label><input type="date" id="f-closed"></div>
-        <div class="field form-full"><label>Description *</label><textarea id="f-desc" placeholder="SM Work Order description…"></textarea></div>
-        <div class="field"><label>Entered by</label><input id="f-entered" placeholder="Initials"></div>
+        <div class="field"><label>Original Package Received</label>
+          <select id="f-pkg"><option value="">—</option><option value="YES">YES</option><option value="PENDING">PENDING</option></select>
+        </div>
+        <div class="field"><label>Form GJ/M-28</label>
+          <select id="f-form"><option value="">—</option><option value="YES">YES</option><option value="N/A">N/A</option></select>
+        </div>
+        <div class="field form-full"><label>Description *</label><textarea id="f-desc" placeholder="Work order description…"></textarea></div>
+        <div class="field"><label>Location</label><input id="f-loc" placeholder="JAN 2025 METAL CABINET"></div>
+        <div class="field"><label>Entered by</label><input id="f-entered" placeholder="TTS"></div>
+        <div class="field form-full"><label>CMP Component List</label><input id="f-cmplist" placeholder="If applicable"></div>
         <div class="field form-full"><label>Remarks</label><input id="f-remarks" placeholder="Optional remarks"></div>
       </div>
       <p class="form-error" id="form-error" style="display:none"></p>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" id="btn-cancel">Cancel</button>
-      <button class="btn btn-save-gjet" id="btn-save">Save SM work order</button>
+      <button class="btn btn-orange" id="btn-save">Save work order</button>
     </div>
   </div>
 </div>
@@ -155,7 +168,6 @@ import {
 
 const COLLECTION = 'gjet_workOrders'
 const PAGE_SIZE  = 50
-
 let allWOs=[], filtered=[], page=1
 let sortCol='issue_date', sortDir='desc'
 let editId=null, userRole='viewer', filterStatus=''
@@ -181,18 +193,19 @@ function buildFilters() {
   const years    = [...new Set(allWOs.map(w=>w.year).filter(Boolean))].sort((a,b)=>b-a)
   const curA=document.getElementById('filter-aircraft').value
   const curY=document.getElementById('filter-year').value
-  document.getElementById('filter-aircraft').innerHTML = '<option value="">All aircraft</option>'+aircraft.map(a=>`<option${a===curA?' selected':''}>${a}</option>`).join('')
-  document.getElementById('filter-year').innerHTML     = '<option value="">All years</option>'+years.map(y=>`<option${String(y)===curY?' selected':''}>${y}</option>`).join('')
+  document.getElementById('filter-aircraft').innerHTML='<option value="">All aircraft</option>'+aircraft.map(a=>`<option${a===curA?' selected':''}>${a}</option>`).join('')
+  document.getElementById('filter-year').innerHTML='<option value="">All years</option>'+years.map(y=>`<option${String(y)===curY?' selected':''}>${y}</option>`).join('')
 }
 
 function applyFilters() {
   const q=document.getElementById('search').value.toLowerCase()
   const fa=document.getElementById('filter-aircraft').value
   const fy=document.getElementById('filter-year').value
+  const fs=document.getElementById('filter-status').value
   filtered=allWOs.filter(w=>{
     const ds=getDisplayStatus(w)
-    const matchQ=!q||[w.wo_number,w.aircraft,w.description,w.entered_by,w.remarks].some(v=>(v||'').toLowerCase().includes(q))
-    const matchS=!filterStatus||ds.key===filterStatus
+    const matchQ=!q||[w.wo_number,w.aircraft,w.description,w.entered_by,w.remarks,w.part_145,w.location].some(v=>(v||'').toLowerCase().includes(q))
+    const matchS=!fs||ds.key===fs
     const matchA=!fa||w.aircraft===fa
     const matchY=!fy||String(w.year)===fy
     return matchQ&&matchS&&matchA&&matchY
@@ -209,31 +222,51 @@ function updateCounts() {
   Object.entries(c).forEach(([k,v])=>{const el=document.getElementById('count-'+k);if(el)el.textContent=v})
 }
 
+function yesNo(val) {
+  if (val==='YES') return '<span style="color:#2e7d32;font-weight:500">YES</span>'
+  if (val==='PENDING') return '<span style="color:#e65100;font-weight:500">PND</span>'
+  return '<span style="color:#ccc">—</span>'
+}
+
 function renderTable() {
   const start=(page-1)*PAGE_SIZE, slice=filtered.slice(start,start+PAGE_SIZE)
   const pages=Math.ceil(filtered.length/PAGE_SIZE)||1
-  document.getElementById('record-count').textContent=`${filtered.length} of ${allWOs.length} records`
+  document.getElementById('record-count').textContent=`${filtered.length} of ${allWOs.length}`
   document.getElementById('page-info').textContent=`Page ${page} of ${pages}`
   document.getElementById('btn-prev').disabled=page<=1
   document.getElementById('btn-next').disabled=page>=pages
   const canEdit=userRole==='admin'||userRole==='editor'
   const canDelete=userRole==='admin'
-  if(!slice.length){document.getElementById('tbody').innerHTML=`<tr><td colspan="9" class="empty-state">No SM work orders found</td></tr>`;return}
+
+  if(!slice.length){document.getElementById('tbody').innerHTML=`<tr><td colspan="18" class="empty-state">No work orders found</td></tr>`;return}
+
   document.getElementById('tbody').innerHTML=slice.map((wo,i)=>{
     const ds=getDisplayStatus(wo)
-    return `<tr class="${ds.rowClass}" ondblclick="${canEdit?`openEdit('${wo.id}')`:''}" style="cursor:${canEdit?'pointer':'default'}">
-      <td style="color:#bbb;font-size:11px">${start+i+1}</td>
-      <td><span class="wo-num">${wo.wo_number||''}</span></td>
-      <td style="color:#777;white-space:nowrap">${wo.issue_date||''}</td>
-      <td style="font-weight:500">${wo.aircraft||''}</td>
-      <td class="desc-cell" title="${(wo.description||'').replace(/"/g,'&quot;')}">${wo.description||''}</td>
-      <td><div class="status-cell"><div class="s-dot" style="background:${ds.dot}"></div><span style="font-size:12px;color:#555">${ds.label}</span></div></td>
-      <td style="color:#777">${wo.entered_by||''}</td>
-      <td style="color:#aaa;font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${wo.remarks||''}</td>
-      <td><div class="action-btns">
-        ${canEdit?`<button class="btn btn-ghost btn-sm" onclick="openEdit('${wo.id}')">Edit</button>`:''}
-        ${canDelete?`<button class="btn btn-danger btn-sm" onclick="deleteWO('${wo.id}','${wo.wo_number}')">Del</button>`:''}
-      </div></td>
+    return `<tr style="background:${ds.rowBg};border-bottom:1.5px solid ${ds.rowBorder};cursor:${canEdit?'pointer':'default'}"
+      ondblclick="${canEdit?`openEdit('${wo.id}')`:''}" >
+      <td style="color:#888;font-size:11px;text-align:center">${start+i+1}</td>
+      <td><span style="font-family:JetBrains Mono,monospace;font-size:12px;color:#e8710a;white-space:nowrap">${wo.wo_number||''}</span></td>
+      <td style="white-space:nowrap;font-size:12px">${wo.issue_date||''}</td>
+      <td style="font-size:12px;color:#777;white-space:nowrap">${wo.due_limit||''}</td>
+      <td style="font-weight:600">${wo.aircraft||''}</td>
+      <td style="font-size:12px;color:#555">${wo.issued_by||''}</td>
+      <td style="font-size:12px;color:#555">${wo.part_145||''}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(wo.description||'').replace(/"/g,'&quot;')}">${wo.description||''}</td>
+      <td style="white-space:nowrap;font-size:12px">${wo.closed_date||''}</td>
+      <td style="text-align:center">${yesNo(wo.cmp_updated)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:5px">
+          <div style="width:9px;height:9px;border-radius:50%;background:${ds.dot};flex-shrink:0"></div>
+          <span style="font-size:11px;font-weight:500;color:#333">${ds.label}</span>
+        </div>
+      </td>
+      <td style="text-align:center">${yesNo(wo.package_received)}</td>
+      <td style="text-align:center">${yesNo(wo.wp_filed)}</td>
+      <td style="font-size:11px;color:#555;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${wo.location||''}</td>
+      <td style="text-align:center">${yesNo(wo.cmp_component_list)}</td>
+      <td style="text-align:center;font-size:12px">${wo.form_completed||'—'}</td>
+      <td style="font-size:12px;color:#555">${wo.entered_by||''}</td>
+      <td style="font-size:11px;color:#777;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(wo.remarks||'').replace(/"/g,'&quot;')}">${wo.remarks||''}</td>
     </tr>`
   }).join('')
 }
@@ -241,13 +274,7 @@ function renderTable() {
 document.getElementById('search').addEventListener('input',applyFilters)
 document.getElementById('filter-aircraft').addEventListener('change',applyFilters)
 document.getElementById('filter-year').addEventListener('change',applyFilters)
-document.querySelectorAll('.stat').forEach(el=>{
-  el.addEventListener('click',()=>{
-    filterStatus=filterStatus===el.dataset.filter?'':el.dataset.filter
-    document.querySelectorAll('.stat').forEach(s=>s.classList.toggle('active',s.dataset.filter===filterStatus&&filterStatus!==''))
-    applyFilters()
-  })
-})
+document.getElementById('filter-status').addEventListener('change',applyFilters)
 document.querySelectorAll('thead th[data-col]').forEach(th=>{
   th.addEventListener('click',()=>{
     sortDir=sortCol===th.dataset.col?(sortDir==='asc'?'desc':'asc'):'asc'
@@ -257,7 +284,20 @@ document.querySelectorAll('thead th[data-col]').forEach(th=>{
 document.getElementById('btn-prev').addEventListener('click',()=>{page--;renderTable()})
 document.getElementById('btn-next').addEventListener('click',()=>{page++;renderTable()})
 
-function openModal(title){document.getElementById('modal-title').textContent=title;document.getElementById('form-error').style.display='none';document.getElementById('modal').classList.add('open')}
+function generateWONumber() {
+  const now=new Date()
+  const yy=String(now.getFullYear()).slice(2)
+  const mm=String(now.getMonth()+1).padStart(2,'0')
+  const dd=String(now.getDate()).padStart(2,'0')
+  const aa=String(allWOs.filter(w=>w.wo_number&&w.wo_number.startsWith(`GJ${yy}${mm}`)).length+1).padStart(3,'0')
+  return `GJ${yy}${mm}${dd}${aa}`
+}
+
+function openModal(title){
+  document.getElementById('modal-title').textContent=title
+  document.getElementById('form-error').style.display='none'
+  document.getElementById('modal').classList.add('open')
+}
 function closeModal(){document.getElementById('modal').classList.remove('open');editId=null}
 document.getElementById('modal-close').addEventListener('click',closeModal)
 document.getElementById('btn-cancel').addEventListener('click',closeModal)
@@ -265,14 +305,13 @@ document.getElementById('modal').addEventListener('click',e=>{if(e.target===e.cu
 
 document.getElementById('btn-new').addEventListener('click',()=>{
   editId=null
-  const now=new Date(),yy=String(now.getFullYear()).slice(2),mm=String(now.getMonth()+1).padStart(2,'0')
-  document.getElementById('f-wo').value='GJ'+yy+mm+'XXX'
+  const now=new Date()
+  document.getElementById('f-wo').value=generateWONumber()
   document.getElementById('f-date').value=now.toISOString().slice(0,10)
-  ;['f-aircraft','f-desc','f-entered','f-remarks'].forEach(id=>document.getElementById(id).value='')
-  document.getElementById('f-status').value='OPEN'
-  document.getElementById('f-wp').value=''
-  document.getElementById('f-closed').value=''
-  openModal('New SM work order')
+  ;['f-aircraft','f-issued','f-part145','f-due','f-closed','f-desc','f-loc','f-entered','f-cmplist','f-remarks'].forEach(id=>document.getElementById(id).value='')
+  ;['f-status'].forEach(id=>document.getElementById(id).value='OPEN')
+  ;['f-wp','f-cmp','f-pkg','f-form'].forEach(id=>document.getElementById(id).value='')
+  openModal('New work order')
 })
 
 window.openEdit=(id)=>{
@@ -281,13 +320,21 @@ window.openEdit=(id)=>{
   document.getElementById('f-wo').value=wo.wo_number||''
   document.getElementById('f-date').value=wo.issue_date||''
   document.getElementById('f-aircraft').value=wo.aircraft||''
+  document.getElementById('f-issued').value=wo.issued_by||''
+  document.getElementById('f-part145').value=wo.part_145||''
+  document.getElementById('f-due').value=wo.due_limit||''
   document.getElementById('f-status').value=wo.status||'OPEN'
   document.getElementById('f-wp').value=wo.wp_filed||''
+  document.getElementById('f-cmp').value=wo.cmp_updated||''
   document.getElementById('f-closed').value=wo.closed_date||''
+  document.getElementById('f-pkg').value=wo.package_received||''
+  document.getElementById('f-form').value=wo.form_completed||''
   document.getElementById('f-desc').value=wo.description||''
+  document.getElementById('f-loc').value=wo.location||''
   document.getElementById('f-entered').value=wo.entered_by||''
+  document.getElementById('f-cmplist').value=wo.cmp_component_list||''
   document.getElementById('f-remarks').value=wo.remarks||''
-  openModal('Edit SM work order')
+  openModal('Edit work order')
 }
 
 document.getElementById('btn-save').addEventListener('click',async()=>{
@@ -297,29 +344,37 @@ document.getElementById('btn-save').addEventListener('click',async()=>{
   if(!aircraft||!desc){errEl.textContent='Aircraft and description are required.';errEl.style.display='block';return}
   errEl.style.display='none'
   const btn=document.getElementById('btn-save');btn.disabled=true;btn.textContent='Saving…'
+  const woNum=document.getElementById('f-wo').value
+  const issueDate=document.getElementById('f-date').value
   const payload={
-    wo_number:document.getElementById('f-wo').value,
-    issue_date:document.getElementById('f-date').value,
-    aircraft,
+    wo_number:woNum, issue_date:issueDate,
+    aircraft, issued_by:document.getElementById('f-issued').value,
+    part_145:document.getElementById('f-part145').value,
+    due_limit:document.getElementById('f-due').value,
     status:document.getElementById('f-status').value,
     wp_filed:document.getElementById('f-wp').value,
+    cmp_updated:document.getElementById('f-cmp').value,
     closed_date:document.getElementById('f-closed').value,
+    package_received:document.getElementById('f-pkg').value,
+    form_completed:document.getElementById('f-form').value,
     description:desc,
+    location:document.getElementById('f-loc').value,
     entered_by:document.getElementById('f-entered').value,
+    cmp_component_list:document.getElementById('f-cmplist').value,
     remarks:document.getElementById('f-remarks').value,
-    year:new Date().getFullYear(),
+    year:issueDate?parseInt(issueDate.slice(0,4)):new Date().getFullYear(),
     updated_at:serverTimestamp()
   }
   try{
-    if(editId){await updateDoc(doc(db,COLLECTION,editId),payload);showToast('SM WO updated','success')}
-    else{await addDoc(collection(db,COLLECTION),{...payload,created_at:serverTimestamp()});showToast('SM WO created','success')}
+    if(editId){await updateDoc(doc(db,COLLECTION,editId),payload);showToast('Work order updated','success')}
+    else{await addDoc(collection(db,COLLECTION),{...payload,created_at:serverTimestamp()});showToast('Work order created','success')}
     closeModal()
   }catch(err){errEl.textContent='Error: '+err.message;errEl.style.display='block'}
-  finally{btn.disabled=false;btn.textContent='Save SM work order'}
+  finally{btn.disabled=false;btn.textContent='Save work order'}
 })
 
 window.deleteWO=async(id,woNum)=>{
-  if(!confirm(`Delete SM WO ${woNum}?`))return
+  if(!confirm(`Delete WO ${woNum}?`))return
   try{await deleteDoc(doc(db,COLLECTION,id));showToast('Deleted','success')}
   catch(err){showToast('Error: '+err.message,'error')}
 }
