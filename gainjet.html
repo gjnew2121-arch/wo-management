@@ -222,6 +222,16 @@ function updateCounts() {
   Object.entries(c).forEach(([k,v])=>{const el=document.getElementById('count-'+k);if(el)el.textContent=v})
 }
 
+function fmtDate(val) {
+  if (!val) return ''
+  // Remove time part if present (e.g. "2024-01-02 00:00:00" → "02/01/24")
+  const d = String(val).split(' ')[0].split('T')[0]
+  const parts = d.split('-')
+  if (parts.length !== 3) return val
+  const [y, m, day] = parts
+  return `${day}/${m}/${y.slice(2)}`
+}
+
 function yesNo(val) {
   if (val==='YES') return '<span style="color:#2e7d32;font-weight:500">YES</span>'
   if (val==='PENDING') return '<span style="color:#e65100;font-weight:500">PND</span>'
@@ -245,14 +255,14 @@ function renderTable() {
     return `<tr style="background:${ds.rowBg};border-bottom:1.5px solid ${ds.rowBorder};cursor:${canEdit?'pointer':'default'}"
       ondblclick="${canEdit?`openEdit('${wo.id}')`:''}" >
       <td style="color:#888;font-size:11px;text-align:center">${start+i+1}</td>
-      <td><span style="font-family:JetBrains Mono,monospace;font-size:12px;color:#1a73e8;white-space:nowrap">${wo.wo_number||''}</span></td>
-      <td style="white-space:nowrap;font-size:12px">${wo.issue_date||''}</td>
+      <td><span style="font-family:JetBrains Mono,monospace;font-size:14px;font-weight:600;color:#1a73e8;white-space:nowrap">${wo.wo_number||''}</span></td>
+      <td style="white-space:nowrap;font-size:12px">${fmtDate(wo.issue_date)}</td>
       <td style="font-size:12px;color:#777;white-space:nowrap">${wo.due_limit||''}</td>
       <td style="font-weight:600">${wo.aircraft||''}</td>
       <td style="font-size:12px;color:#555">${wo.issued_by||''}</td>
       <td style="font-size:12px;color:#555">${wo.part_145||''}</td>
       <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(wo.description||'').replace(/"/g,'&quot;')}">${wo.description||''}</td>
-      <td style="white-space:nowrap;font-size:12px">${wo.closed_date||''}</td>
+      <td style="white-space:nowrap;font-size:12px">${fmtDate(wo.closed_date)}</td>
       <td style="text-align:center">${yesNo(wo.cmp_updated)}</td>
       <td>
         <div style="display:flex;align-items:center;gap:5px">
