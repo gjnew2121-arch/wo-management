@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GainJet — Work Orders</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav>
+  <a href="home.html" class="nav-logo">
+    <div class="nav-dot-gainjet"></div>GainJet
+  </a>
+  <a href="gainjet.html" class="nav-link active" data-page="gainjet">Work Orders</a>
+  <a href="admin.html"   class="nav-link" data-page="admin" id="nav-admin" style="display:none">Users</a>
+  <div class="nav-right">
+    <span class="nav-user"    id="nav-user"></span>
+    <span class="role-badge"  id="nav-role"></span>
+    <span class="company-badge company-gainjet">GAINJET</span>
+    <button class="btn-signout" id="btn-signout">Sign out</button>
+  </div>
+</nav>
+
+<!-- STATS -->
+<div class="stats-bar" id="stats-bar">
+  <div class="stat" data-filter="OPEN">
+    <div class="stat-val" id="count-OPEN">—</div>
+    <div class="stat-lbl"><div class="stat-dot" style="background:#9e9e9e"></div>Open WO</div>
+  </div>
+  <div class="stat" data-filter="CLOSED">
+    <div class="stat-val" id="count-CLOSED">—</div>
+    <div class="stat-lbl"><div class="stat-dot" style="background:#4caf50"></div>WO Completed</div>
+  </div>
+  <div class="stat" data-filter="DOCS">
+    <div class="stat-val" id="count-DOCS">—</div>
+    <div class="stat-lbl"><div class="stat-dot" style="background:#2196f3"></div>Docs in office</div>
+  </div>
+  <div class="stat" data-filter="CNX">
+    <div class="stat-val" id="count-CNX">—</div>
+    <div class="stat-lbl"><div class="stat-dot" style="background:#f44336"></div>Cancelled</div>
+  </div>
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="search" placeholder="Search WO, aircraft, description…" style="padding-left:28px">
+  </div>
+  <select id="filter-aircraft"><option value="">All aircraft</option></select>
+  <select id="filter-year"><option value="">All years</option></select>
+  <span class="record-count" id="record-count"></span>
+  <button class="btn btn-blue" id="btn-new" style="margin-left:auto;display:none">+ New WO</button>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="legend-item"><div class="leg-swatch" style="background:#fff;border:1px solid #bbb"></div>Open WO</div>
+  <div class="legend-item"><div class="leg-swatch" style="background:rgba(76,175,80,0.15);border:1px solid #a5d6a7"></div>WO Completed</div>
+  <div class="legend-item"><div class="leg-swatch" style="background:rgba(33,150,243,0.15);border:1px solid #90caf9"></div>WO Completed – Docs in office</div>
+  <div class="legend-item"><div class="leg-swatch" style="background:rgba(244,67,54,0.12);border:1px solid #ef9a9a"></div>Cancelled</div>
+</div>
+
+<!-- TABLE -->
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:40px">#</th>
+        <th data-col="wo_number">WO Number ↕</th>
+        <th data-col="issue_date">Date ↕</th>
+        <th data-col="aircraft">Aircraft ↕</th>
+        <th>Part 145</th>
+        <th>Description</th>
+        <th data-col="status">Status ↕</th>
+        <th>Entered by</th>
+        <th>Location</th>
+        <th style="width:80px"></th>
+      </tr>
+    </thead>
+    <tbody id="tbody">
+      <tr><td colspan="10" class="empty-state">Loading…</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="pagination">
+  <button id="btn-prev" disabled>← Prev</button>
+  <span id="page-info">Page 1</span>
+  <button id="btn-next">Next →</button>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modal-title">New work order</h2>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field"><label>WO Number</label><input id="f-wo" readonly style="background:#f0f0f0;color:#888"></div>
+        <div class="field"><label>Issue date</label><input type="date" id="f-date"></div>
+        <div class="field"><label>Aircraft *</label><input id="f-aircraft" placeholder="SX-DHB"></div>
+        <div class="field"><label>Issued by</label><input id="f-issued" placeholder="TTS"></div>
+        <div class="field"><label>Part 145</label><input id="f-part145" placeholder="GNJ P-145"></div>
+        <div class="field"><label>Due limit</label><input id="f-due" placeholder="Date / HRS / CLS"></div>
+        <div class="field"><label>Status</label>
+          <select id="f-status">
+            <option value="OPEN">Open</option>
+            <option value="CLOSED">Closed</option>
+            <option value="CNX">Cancelled (CNX)</option>
+          </select>
+        </div>
+        <div class="field"><label>WP Filed</label>
+          <select id="f-wp">
+            <option value="">—</option>
+            <option value="YES">YES</option>
+            <option value="PENDING">PENDING</option>
+          </select>
+        </div>
+        <div class="field"><label>CMP Updated</label>
+          <select id="f-cmp">
+            <option value="">—</option>
+            <option value="YES">YES</option>
+            <option value="PENDING">PENDING</option>
+          </select>
+        </div>
+        <div class="field"><label>Closed date</label><input type="date" id="f-closed"></div>
+        <div class="field form-full"><label>Description *</label><textarea id="f-desc" placeholder="Work order description…"></textarea></div>
+        <div class="field"><label>Location</label><input id="f-loc" placeholder="AUG 2024 METAL CABINET"></div>
+        <div class="field"><label>Entered by</label><input id="f-entered" placeholder="TTS"></div>
+        <div class="field form-full"><label>Remarks</label><input id="f-remarks" placeholder="Optional remarks"></div>
+      </div>
+      <p class="form-error" id="form-error" style="display:none"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="btn-cancel">Cancel</button>
+      <button class="btn btn-blue" id="btn-save">Save work order</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { db }    from './js/firebase-config.js'
+import { requireAuth, setupNav, showToast } from './js/auth.js'
+import { getDisplayStatus, STATUS }         from './js/status.js'
+import {
+  collection, query, orderBy, onSnapshot,
+  addDoc, updateDoc, deleteDoc, doc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"
+
+const COLLECTION = 'gainjet_workOrders'
+const PAGE_SIZE  = 50
+
+let allWOs = [], filtered = [], page = 1
+let sortCol = 'issue_date', sortDir = 'desc'
+let editId = null, userRole = 'viewer', filterStatus = ''
+
+requireAuth((user, role, company) => {
+  // Block access if user belongs only to GJET
+  if (company === 'GJET' && role !== 'admin') { window.location.href = 'home.html'; return }
+  userRole = role
+  setupNav(user, role, 'GAINJET', 'gainjet')
+  if (role !== 'viewer') document.getElementById('btn-new').style.display = 'flex'
+  loadWOs()
+})
+
+function loadWOs() {
+  const q = query(collection(db, COLLECTION), orderBy('issue_date', 'desc'))
+  onSnapshot(q, snap => {
+    allWOs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    buildFilters(); applyFilters()
+  })
+}
+
+function buildFilters() {
+  const aircraft = [...new Set(allWOs.map(w => w.aircraft).filter(Boolean))].sort()
+  const years    = [...new Set(allWOs.map(w => w.year).filter(Boolean))].sort((a,b) => b-a)
+  const curA = document.getElementById('filter-aircraft').value
+  const curY = document.getElementById('filter-year').value
+  document.getElementById('filter-aircraft').innerHTML =
+    '<option value="">All aircraft</option>' + aircraft.map(a => `<option${a===curA?' selected':''}>${a}</option>`).join('')
+  document.getElementById('filter-year').innerHTML =
+    '<option value="">All years</option>' + years.map(y => `<option${String(y)===curY?' selected':''}>${y}</option>`).join('')
+}
+
+function applyFilters() {
+  const q  = document.getElementById('search').value.toLowerCase()
+  const fa = document.getElementById('filter-aircraft').value
+  const fy = document.getElementById('filter-year').value
+  filtered = allWOs.filter(w => {
+    const ds = getDisplayStatus(w)
+    const matchQ = !q  || [w.wo_number,w.aircraft,w.description,w.entered_by,w.remarks,w.part_145].some(v=>(v||'').toLowerCase().includes(q))
+    const matchS = !filterStatus || ds.key === filterStatus
+    const matchA = !fa || w.aircraft === fa
+    const matchY = !fy || String(w.year) === fy
+    return matchQ && matchS && matchA && matchY
+  }).sort((a,b) => {
+    const va = a[sortCol]||'', vb = b[sortCol]||''
+    return sortDir==='asc' ? va.localeCompare(vb) : vb.localeCompare(va)
+  })
+  updateCounts(); page = 1; renderTable()
+}
+
+function updateCounts() {
+  const counts = {OPEN:0,CLOSED:0,DOCS:0,CNX:0}
+  allWOs.forEach(w => counts[getDisplayStatus(w).key]++)
+  Object.entries(counts).forEach(([k,v]) => { const el = document.getElementById('count-'+k); if(el) el.textContent=v })
+}
+
+function renderTable() {
+  const start = (page-1)*PAGE_SIZE
+  const slice = filtered.slice(start, start+PAGE_SIZE)
+  const pages = Math.ceil(filtered.length/PAGE_SIZE)||1
+  document.getElementById('record-count').textContent = `${filtered.length} of ${allWOs.length} records`
+  document.getElementById('page-info').textContent    = `Page ${page} of ${pages}`
+  document.getElementById('btn-prev').disabled = page<=1
+  document.getElementById('btn-next').disabled = page>=pages
+
+  const canEdit   = userRole==='admin'||userRole==='editor'
+  const canDelete = userRole==='admin'
+
+  if (!slice.length) {
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="10" class="empty-state">No work orders found</td></tr>`
+    return
+  }
+
+  document.getElementById('tbody').innerHTML = slice.map((wo,i) => {
+    const ds = getDisplayStatus(wo)
+    return `<tr class="${ds.rowClass}" ondblclick="${canEdit?`openEdit('${wo.id}')`:''}" style="cursor:${canEdit?'pointer':'default'}">
+      <td style="color:#bbb;font-size:11px">${start+i+1}</td>
+      <td><span class="wo-num">${wo.wo_number||''}</span></td>
+      <td style="color:#777;white-space:nowrap">${wo.issue_date||''}</td>
+      <td style="font-weight:500">${wo.aircraft||''}</td>
+      <td style="color:#888;font-size:12px">${wo.part_145||''}</td>
+      <td class="desc-cell" title="${(wo.description||'').replace(/"/g,'&quot;')}">${wo.description||''}</td>
+      <td><div class="status-cell"><div class="s-dot" style="background:${ds.dot}"></div><span style="font-size:12px;color:#555">${ds.label}</span></div></td>
+      <td style="color:#777">${wo.entered_by||''}</td>
+      <td style="color:#aaa;font-size:12px">${wo.location||''}</td>
+      <td><div class="action-btns">
+        ${canEdit   ? `<button class="btn btn-ghost btn-sm" onclick="openEdit('${wo.id}')">Edit</button>` : ''}
+        ${canDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteWO('${wo.id}','${wo.wo_number}')">Del</button>` : ''}
+      </div></td>
+    </tr>`
+  }).join('')
+}
+
+// Filters
+document.getElementById('search').addEventListener('input', applyFilters)
+document.getElementById('filter-aircraft').addEventListener('change', applyFilters)
+document.getElementById('filter-year').addEventListener('change', applyFilters)
+document.querySelectorAll('.stat').forEach(el => {
+  el.addEventListener('click', () => {
+    filterStatus = filterStatus===el.dataset.filter ? '' : el.dataset.filter
+    document.querySelectorAll('.stat').forEach(s => s.classList.toggle('active', s.dataset.filter===filterStatus&&filterStatus!==''))
+    applyFilters()
+  })
+})
+document.querySelectorAll('thead th[data-col]').forEach(th => {
+  th.addEventListener('click', () => {
+    sortDir = sortCol===th.dataset.col ? (sortDir==='asc'?'desc':'asc') : 'asc'
+    sortCol = th.dataset.col; applyFilters()
+  })
+})
+document.getElementById('btn-prev').addEventListener('click', () => { page--; renderTable() })
+document.getElementById('btn-next').addEventListener('click', () => { page++; renderTable() })
+
+// Modal
+function openModal(title) {
+  document.getElementById('modal-title').textContent = title
+  document.getElementById('form-error').style.display = 'none'
+  document.getElementById('modal').classList.add('open')
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); editId=null }
+document.getElementById('modal-close').addEventListener('click', closeModal)
+document.getElementById('btn-cancel').addEventListener('click', closeModal)
+document.getElementById('modal').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal() })
+
+document.getElementById('btn-new').addEventListener('click', () => {
+  editId=null
+  const now=new Date(), yy=String(now.getFullYear()).slice(2), mm=String(now.getMonth()+1).padStart(2,'0')
+  document.getElementById('f-wo').value       = `GJ${yy}${mm}XXX`
+  document.getElementById('f-date').value     = now.toISOString().slice(0,10)
+  document.getElementById('f-aircraft').value = ''
+  document.getElementById('f-issued').value   = ''
+  document.getElementById('f-part145').value  = ''
+  document.getElementById('f-due').value      = ''
+  document.getElementById('f-status').value   = 'OPEN'
+  document.getElementById('f-wp').value       = ''
+  document.getElementById('f-cmp').value      = ''
+  document.getElementById('f-closed').value   = ''
+  document.getElementById('f-desc').value     = ''
+  document.getElementById('f-loc').value      = ''
+  document.getElementById('f-entered').value  = ''
+  document.getElementById('f-remarks').value  = ''
+  openModal('New work order')
+})
+
+window.openEdit = (id) => {
+  const wo=allWOs.find(w=>w.id===id); if(!wo) return
+  editId=id
+  document.getElementById('f-wo').value       = wo.wo_number||''
+  document.getElementById('f-date').value     = wo.issue_date||''
+  document.getElementById('f-aircraft').value = wo.aircraft||''
+  document.getElementById('f-issued').value   = wo.issued_by||''
+  document.getElementById('f-part145').value  = wo.part_145||''
+  document.getElementById('f-due').value      = wo.due_limit||''
+  document.getElementById('f-status').value   = wo.status||'OPEN'
+  document.getElementById('f-wp').value       = wo.wp_filed||''
+  document.getElementById('f-cmp').value      = wo.cmp_updated||''
+  document.getElementById('f-closed').value   = wo.closed_date||''
+  document.getElementById('f-desc').value     = wo.description||''
+  document.getElementById('f-loc').value      = wo.location||''
+  document.getElementById('f-entered').value  = wo.entered_by||''
+  document.getElementById('f-remarks').value  = wo.remarks||''
+  openModal('Edit work order')
+}
+
+document.getElementById('btn-save').addEventListener('click', async () => {
+  const aircraft=document.getElementById('f-aircraft').value.trim()
+  const desc=document.getElementById('f-desc').value.trim()
+  const errEl=document.getElementById('form-error')
+  if(!aircraft||!desc){ errEl.textContent='Aircraft and description are required.'; errEl.style.display='block'; return }
+  errEl.style.display='none'
+  const btn=document.getElementById('btn-save')
+  btn.disabled=true; btn.textContent='Saving…'
+  const payload={
+    wo_number:document.getElementById('f-wo').value, issue_date:document.getElementById('f-date').value,
+    aircraft, issued_by:document.getElementById('f-issued').value, part_145:document.getElementById('f-part145').value,
+    due_limit:document.getElementById('f-due').value, status:document.getElementById('f-status').value,
+    wp_filed:document.getElementById('f-wp').value, cmp_updated:document.getElementById('f-cmp').value,
+    closed_date:document.getElementById('f-closed').value, description:desc,
+    location:document.getElementById('f-loc').value, entered_by:document.getElementById('f-entered').value,
+    remarks:document.getElementById('f-remarks').value, year:new Date().getFullYear(), updated_at:serverTimestamp()
+  }
+  try {
+    if(editId) { await updateDoc(doc(db,COLLECTION,editId),payload); showToast('Work order updated','success') }
+    else { await addDoc(collection(db,COLLECTION),{...payload,created_at:serverTimestamp()}); showToast('Work order created','success') }
+    closeModal()
+  } catch(err) { errEl.textContent='Error: '+err.message; errEl.style.display='block' }
+  finally { btn.disabled=false; btn.textContent='Save work order' }
+})
+
+window.deleteWO = async (id, woNum) => {
+  if(!confirm(`Delete WO ${woNum}?`)) return
+  try { await deleteDoc(doc(db,COLLECTION,id)); showToast('Deleted','success') }
+  catch(err) { showToast('Error: '+err.message,'error') }
+}
+</script>
+</body>
+</html>

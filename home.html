@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Select Company — WO Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="home-wrap" id="home-wrap" style="display:none">
+  <div style="text-align:center;margin-bottom:8px">
+    <p style="font-size:13px;color:#aaa" id="home-greeting"></p>
+  </div>
+
+  <p class="home-title">Select company</p>
+
+  <div class="company-cards" id="company-cards">
+    <!-- rendered by JS based on user company -->
+  </div>
+
+  <button class="home-signout" id="btn-signout">Sign out</button>
+</div>
+
+<script type="module">
+import { auth, db } from './js/firebase-config.js'
+import { requireAuth, clearSession, showToast } from './js/auth.js'
+import { signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"
+
+requireAuth((user, role, company) => {
+  document.getElementById('home-wrap').style.display = 'flex'
+  document.getElementById('home-greeting').textContent = `Welcome, ${user.displayName}`
+
+  const cards = document.getElementById('company-cards')
+
+  // Admin βλέπει και τις δύο, οι άλλοι μόνο τη δική τους
+  const showGainjet = company === 'GAINJET' || company === 'both' || role === 'admin'
+  const showGjet    = company === 'GJET'    || company === 'both' || role === 'admin'
+
+  // Αν έχει πρόσβαση μόνο σε μία → redirect αυτόματα
+  if (showGainjet && !showGjet) { window.location.href = 'gainjet.html'; return }
+  if (showGjet    && !showGainjet) { window.location.href = 'gjet.html'; return }
+
+  if (showGainjet) {
+    cards.innerHTML += `
+      <a href="gainjet.html" class="company-card gainjet">
+        <div class="company-icon">✈️</div>
+        <div class="company-name">GainJet</div>
+        <div class="company-desc">Work Orders</div>
+      </a>`
+  }
+
+  if (showGjet) {
+    cards.innerHTML += `
+      <a href="gjet.html" class="company-card gjet">
+        <div class="company-icon">🛩️</div>
+        <div class="company-name">GJet</div>
+        <div class="company-desc">SM Work Orders</div>
+      </a>`
+  }
+
+  document.getElementById('btn-signout').addEventListener('click', async () => {
+    clearSession()
+    await signOut(auth)
+    window.location.href = 'index.html'
+  })
+})
+</script>
+</body>
+</html>

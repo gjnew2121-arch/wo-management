@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function userData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function role()    { return userData().role; }
+    function company() { return userData().company; }
+
+    function isAdmin()  { return request.auth != null && role() == 'admin'; }
+    function isEditor() { return request.auth != null && role() in ['admin','editor']; }
+    function isViewer() { return request.auth != null && role() in ['admin','editor','viewer']; }
+
+    function canAccessGainjet() {
+      return isViewer() && (company() in ['GAINJET','both'] || role() == 'admin');
+    }
+    function canAccessGjet() {
+      return isViewer() && (company() in ['GJET','both'] || role() == 'admin');
+    }
+
+    // GainJet Work Orders
+    match /gainjet_workOrders/{id} {
+      allow read:   if canAccessGainjet();
+      allow create: if isEditor() && (company() in ['GAINJET','both'] || role()=='admin');
+      allow update: if isEditor() && (company() in ['GAINJET','both'] || role()=='admin');
+      allow delete: if isAdmin();
+    }
+
+    // GJet SM Work Orders
+    match /gjet_workOrders/{id} {
+      allow read:   if canAccessGjet();
+      allow create: if isEditor() && (company() in ['GJET','both'] || role()=='admin');
+      allow update: if isEditor() && (company() in ['GJET','both'] || role()=='admin');
+      allow delete: if isAdmin();
+    }
+
+    // Users
+    match /users/{uid} {
+      allow read:  if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow write: if isAdmin();
+    }
+  }
+}

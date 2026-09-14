@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in — WO Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-logos">
+      <div class="nav-dot-gainjet"></div>
+      <div class="nav-dot-gjet" style="margin-left:-2px"></div>
+      <span>WO Management</span>
+    </div>
+    <p class="login-sub">GainJet Aviation &amp; GJet</p>
+
+    <form id="login-form" style="display:flex;flex-direction:column;gap:16px">
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="you@company.com" required autocomplete="email">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+      </div>
+      <p class="login-error" id="login-error" style="display:none"></p>
+      <button type="submit" class="btn btn-blue" id="login-btn" style="width:100%;padding:9px">Sign in</button>
+    </form>
+
+    <p style="font-size:11px;color:#ccc;text-align:center;margin-top:20px">Session expires after 24 hours</p>
+  </div>
+</div>
+
+<script type="module">
+import { auth }    from './js/firebase-config.js'
+import { recordLogin, isSessionValid } from './js/auth.js'
+import { signInWithEmailAndPassword, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"
+import { db } from './js/firebase-config.js'
+
+// Αν είναι ήδη logged in & session valid → home
+onAuthStateChanged(auth, async user => {
+  if (user && isSessionValid()) {
+    window.location.href = 'home.html'
+  }
+})
+
+document.getElementById('login-form').addEventListener('submit', async e => {
+  e.preventDefault()
+  const btn = document.getElementById('login-btn')
+  const err = document.getElementById('login-error')
+  btn.disabled = true; btn.textContent = 'Signing in…'
+  err.style.display = 'none'
+
+  try {
+    await signInWithEmailAndPassword(
+      auth,
+      document.getElementById('email').value.trim(),
+      document.getElementById('password').value
+    )
+    recordLogin()
+    window.location.href = 'home.html'
+  } catch {
+    err.textContent = 'Wrong email or password.'
+    err.style.display = 'block'
+    btn.disabled = false; btn.textContent = 'Sign in'
+  }
+})
+</script>
+</body>
+</html>
