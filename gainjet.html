@@ -7,17 +7,55 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+    .stats-bar { display:grid; grid-template-columns:repeat(4,1fr); border-bottom:0.5px solid #e0e0e0; background:#fff; flex-shrink:0; }
+    .stat { padding:6px 16px; border-right:0.5px solid #e0e0e0; cursor:pointer; transition:background 0.15s; display:flex; align-items:center; gap:12px; }
+    .stat:last-child { border-right:none; }
+    .stat:hover { background:#f5f5f5; }
+    .stat.active { background:#f0f7ff; }
+    .stat-val { font-size:20px; font-weight:600; }
+    .stat-lbl { font-size:11px; color:#888; display:flex; align-items:center; gap:4px; }
+    .stat-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .toolbar { display:flex; align-items:center; gap:8px; padding:8px 16px; border-bottom:0.5px solid #e0e0e0; background:#fff; flex-shrink:0; flex-wrap:wrap; }
+    .legend { display:flex; gap:14px; padding:5px 16px; background:#fafafa; border-bottom:0.5px solid #e0e0e0; flex-shrink:0; flex-wrap:wrap; }
+    .legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:#888; }
+    .leg-swatch { width:12px; height:12px; border-radius:3px; }
+    .table-wrap { flex:1; overflow:auto; }
+    table { width:100%; border-collapse:collapse; font-size:12px; }
+    thead th { position:sticky; top:0; z-index:10; padding:7px 10px; text-align:left; font-size:11px; font-weight:600; color:#555; border-bottom:1.5px solid #ddd; background:#f0f0f0; white-space:nowrap; cursor:pointer; user-select:none; }
+    thead th:hover { background:#e8e8e8; }
+    tbody td { padding:7px 10px; border-bottom:1px solid rgba(0,0,0,0.06); vertical-align:middle; }
+    .pagination { display:flex; align-items:center; justify-content:center; gap:8px; padding:8px; border-top:0.5px solid #eee; background:#fff; flex-shrink:0; }
+    .pagination button { padding:4px 12px; font-size:12px; border:0.5px solid #ddd; border-radius:5px; background:#fafafa; cursor:pointer; font-family:Inter,sans-serif; }
+    .pagination button:disabled { opacity:0.4; cursor:not-allowed; }
+    .pagination span { font-size:12px; color:#888; }
+    .search-wrap { position:relative; flex:1; min-width:160px; max-width:260px; }
+    .search-icon { position:absolute; left:8px; top:50%; transform:translateY(-50%); color:#bbb; font-size:13px; }
+    .search-wrap input { width:100%; padding:5px 8px 5px 26px; font-size:13px; border:0.5px solid #ddd; border-radius:6px; outline:none; background:#fafafa; font-family:Inter,sans-serif; }
+    .toolbar select { padding:5px 8px; font-size:12px; border:0.5px solid #ddd; border-radius:6px; background:#fafafa; cursor:pointer; font-family:Inter,sans-serif; }
+    .record-count { font-size:11px; color:#bbb; }
+    .empty-state { padding:40px; text-align:center; color:#bbb; }
+    .action-cell { display:flex; gap:4px; opacity:0; transition:opacity 0.15s; }
+    tr:hover .action-cell { opacity:1; }
+    .btn-edit { padding:2px 8px; font-size:11px; border:0.5px solid #1a73e8; border-radius:4px; background:none; color:#1a73e8; cursor:pointer; }
+    .btn-del  { padding:2px 8px; font-size:11px; border:0.5px solid #f44336; border-radius:4px; background:none; color:#f44336; cursor:pointer; }
+    .btn-edit:hover { background:#e8f0fe; }
+    .btn-del:hover  { background:#fce8e6; }
+  </style>
 </head>
 <body>
 
-<nav>
-  <a href="home.html" class="nav-logo"><div class="nav-dot-gainjet"></div>GainJet</a>
-  <a href="gainjet.html" class="nav-link active" data-page="gainjet">Work Orders</a>
-  <a href="admin.html" class="nav-link" data-page="admin" id="nav-admin" style="display:none">Users</a>
-  <div class="nav-right">
-    <span class="nav-user" id="nav-user"></span>
-    <span class="role-badge" id="nav-role"></span>
-    <span class="company-badge company-gainjet">GAINJET</span>
+<nav style="display:flex;align-items:center;padding:0 16px;height:44px;background:#fff;border-bottom:0.5px solid #e0e0e0;flex-shrink:0">
+  <a href="home.html" style="display:flex;align-items:center;gap:7px;text-decoration:none;font-size:14px;font-weight:600;color:#111;margin-right:20px">
+    <div style="width:9px;height:9px;border-radius:50%;background:#1a73e8"></div>GainJet
+  </a>
+  <a href="gainjet.html" style="text-decoration:none;padding:0 12px;height:44px;display:flex;align-items:center;font-size:13px;color:#1a73e8;border-bottom:2px solid #1a73e8;font-weight:500">Work Orders</a>
+  <a href="admin.html" id="nav-admin" style="display:none;text-decoration:none;padding:0 12px;height:44px;align-items:center;font-size:13px;color:#555;border-bottom:2px solid transparent">Users</a>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+    <span id="nav-user" style="font-size:13px;color:#555"></span>
+    <span id="nav-role" class="role-badge"></span>
+    <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:#e3f2fd;color:#1565c0">GAINJET</span>
     <button class="btn-signout" id="btn-signout">Sign out</button>
   </div>
 </nav>
@@ -46,26 +84,27 @@
 <div class="toolbar">
   <div class="search-wrap">
     <span class="search-icon">🔍</span>
-    <input type="text" id="search" placeholder="Search WO, aircraft, description…" style="padding-left:28px">
+    <input type="text" id="search" placeholder="Search WO, aircraft…">
   </div>
   <select id="filter-aircraft"><option value="">All aircraft</option></select>
   <select id="filter-year"><option value="">All years</option></select>
-  <select id="filter-status"><option value="">All statuses</option>
+  <select id="filter-status">
+    <option value="">All statuses</option>
     <option value="OPEN">Open WO</option>
     <option value="CLOSED">WO Completed</option>
     <option value="DOCS">Docs in office</option>
     <option value="CNX">Cancelled</option>
   </select>
   <span class="record-count" id="record-count"></span>
-  <button class="btn btn-blue" id="btn-new" style="margin-left:auto;display:none">+ New WO</button>
+  <button class="btn btn-blue" id="btn-new" style="margin-left:auto;display:none;padding:5px 14px;font-size:13px">+ New WO</button>
 </div>
 
 <!-- LEGEND -->
 <div class="legend">
   <div class="legend-item"><div class="leg-swatch" style="background:#fff;border:1.5px solid #ccc"></div>Open WO</div>
-  <div class="legend-item"><div class="leg-swatch" style="background:rgba(76,175,80,0.25);border:1.5px solid #4caf50"></div>WO Completed</div>
-  <div class="legend-item"><div class="leg-swatch" style="background:rgba(33,150,243,0.25);border:1.5px solid #2196f3"></div>WO Completed – Docs in office</div>
-  <div class="legend-item"><div class="leg-swatch" style="background:rgba(244,67,54,0.22);border:1.5px solid #f44336"></div>Cancelled</div>
+  <div class="legend-item"><div class="leg-swatch" style="background:rgba(76,175,80,0.3);border:1.5px solid #4caf50"></div>WO Completed</div>
+  <div class="legend-item"><div class="leg-swatch" style="background:rgba(33,150,243,0.3);border:1.5px solid #2196f3"></div>Docs in office</div>
+  <div class="legend-item"><div class="leg-swatch" style="background:rgba(244,67,54,0.25);border:1.5px solid #f44336"></div>Cancelled</div>
 </div>
 
 <!-- TABLE -->
@@ -73,7 +112,7 @@
   <table>
     <thead>
       <tr>
-        <th style="width:35px">A/A</th>
+        <th style="width:30px">A/A</th>
         <th data-col="wo_number">WO NUM ↕</th>
         <th data-col="issue_date">ISSUE DATE ↕</th>
         <th>DUE LIMIT</th>
@@ -91,10 +130,11 @@
         <th>FORM M-28</th>
         <th>ENTERED BY</th>
         <th>REMARKS</th>
+        <th style="width:80px"></th>
       </tr>
     </thead>
     <tbody id="tbody">
-      <tr><td colspan="18" class="empty-state">Loading…</td></tr>
+      <tr><td colspan="19" class="empty-state">Loading…</td></tr>
     </tbody>
   </table>
 </div>
@@ -107,19 +147,19 @@
 
 <!-- MODAL -->
 <div class="modal-overlay" id="modal">
-  <div class="modal" style="width:680px">
+  <div class="modal" style="width:700px">
     <div class="modal-head">
       <h2 id="modal-title">New work order</h2>
       <button class="modal-close" id="modal-close">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="field"><label>WO Number</label><input id="f-wo" readonly style="background:#f0f0f0;color:#888"></div>
+        <div class="field"><label>WO Number</label><input id="f-wo" readonly style="background:#f0f0f0;color:#888;font-family:JetBrains Mono,monospace"></div>
         <div class="field"><label>Issue date</label><input type="date" id="f-date"></div>
         <div class="field"><label>Aircraft *</label><input id="f-aircraft" placeholder="SX-DHB"></div>
         <div class="field"><label>Issued by</label><input id="f-issued" placeholder="TTS"></div>
         <div class="field"><label>Part 145</label><input id="f-part145" placeholder="GNJ P-145"></div>
-        <div class="field"><label>Due limit</label><input id="f-due" placeholder="Date / HRS / CLS"></div>
+        <div class="field"><label>Due limit</label><input type="date" id="f-due"></div>
         <div class="field"><label>Status</label>
           <select id="f-status">
             <option value="OPEN">Open</option>
@@ -163,11 +203,13 @@ import { requireAuth, setupNav, showToast } from './js/auth.js'
 import { getDisplayStatus, STATUS }         from './js/status.js'
 import {
   collection, query, orderBy, onSnapshot,
-  addDoc, updateDoc, deleteDoc, doc, serverTimestamp
+  addDoc, updateDoc, deleteDoc, doc, serverTimestamp, setDoc
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"
 
-const COLLECTION = 'gainjet_workOrders'
-const PAGE_SIZE  = 50
+const COLLECTION         = 'gainjet_workOrders'
+const DELETED_COLLECTION = 'gainjet_deletedWOs'
+const PAGE_SIZE          = 50
+
 let allWOs=[], filtered=[], page=1
 let sortCol='issue_date', sortDir='desc'
 let editId=null, userRole='viewer', filterStatus=''
@@ -204,7 +246,7 @@ function applyFilters() {
   const fs=document.getElementById('filter-status').value
   filtered=allWOs.filter(w=>{
     const ds=getDisplayStatus(w)
-    const matchQ=!q||[w.wo_number,w.aircraft,w.description,w.entered_by,w.remarks,w.part_145,w.location].some(v=>(v||'').toLowerCase().includes(q))
+    const matchQ=!q||[w.wo_number,w.aircraft,w.description,w.entered_by,w.remarks,w.part_145,w.location,w.issued_by].some(v=>(v||'').toLowerCase().includes(q))
     const matchS=!fs||ds.key===fs
     const matchA=!fa||w.aircraft===fa
     const matchY=!fy||String(w.year)===fy
@@ -224,67 +266,85 @@ function updateCounts() {
 
 function fmtDate(val) {
   if (!val) return ''
-  // Remove time part if present (e.g. "2024-01-02 00:00:00" → "02/01/24")
-  const d = String(val).split(' ')[0].split('T')[0]
-  const parts = d.split('-')
-  if (parts.length !== 3) return val
-  const [y, m, day] = parts
+  const d=String(val).split(' ')[0].split('T')[0]
+  const parts=d.split('-')
+  if (parts.length!==3) return val
+  const [y,m,day]=parts
   return `${day}/${m}/${y.slice(2)}`
 }
 
 function yesNo(val) {
-  if (val==='YES') return '<span style="color:#2e7d32;font-weight:500">YES</span>'
-  if (val==='PENDING') return '<span style="color:#e65100;font-weight:500">PND</span>'
-  return '<span style="color:#ccc">—</span>'
+  if (val==='YES')     return '<span style="color:#2e7d32;font-weight:600;font-size:11px">YES</span>'
+  if (val==='PENDING') return '<span style="color:#e65100;font-weight:600;font-size:11px">PND</span>'
+  return '<span style="color:#ddd">—</span>'
 }
 
 function renderTable() {
   const start=(page-1)*PAGE_SIZE, slice=filtered.slice(start,start+PAGE_SIZE)
   const pages=Math.ceil(filtered.length/PAGE_SIZE)||1
-  document.getElementById('record-count').textContent=`${filtered.length} of ${allWOs.length}`
+  document.getElementById('record-count').textContent=`${filtered.length} / ${allWOs.length}`
   document.getElementById('page-info').textContent=`Page ${page} of ${pages}`
   document.getElementById('btn-prev').disabled=page<=1
   document.getElementById('btn-next').disabled=page>=pages
   const canEdit=userRole==='admin'||userRole==='editor'
   const canDelete=userRole==='admin'
 
-  if(!slice.length){document.getElementById('tbody').innerHTML=`<tr><td colspan="18" class="empty-state">No work orders found</td></tr>`;return}
+  if(!slice.length){document.getElementById('tbody').innerHTML=`<tr><td colspan="19" class="empty-state">No work orders found</td></tr>`;return}
 
   document.getElementById('tbody').innerHTML=slice.map((wo,i)=>{
     const ds=getDisplayStatus(wo)
-    return `<tr style="background:${ds.rowBg};border-bottom:1.5px solid ${ds.rowBorder};cursor:${canEdit?'pointer':'default'}"
-      ondblclick="${canEdit?`openEdit('${wo.id}')`:''}" >
-      <td style="color:#888;font-size:11px;text-align:center">${start+i+1}</td>
-      <td><span style="font-family:JetBrains Mono,monospace;font-size:14px;font-weight:600;color:#1a73e8;white-space:nowrap">${wo.wo_number||''}</span></td>
-      <td style="white-space:nowrap;font-size:12px">${fmtDate(wo.issue_date)}</td>
-      <td style="font-size:12px;color:#777;white-space:nowrap">${wo.due_limit||''}</td>
+    return `<tr style="background:${ds.rowBg};border-bottom:1.5px solid ${ds.rowBorder}">
+      <td style="color:#aaa;font-size:11px;text-align:center">${start+i+1}</td>
+      <td><span style="font-family:JetBrains Mono,monospace;font-size:13px;font-weight:700;color:#1a73e8;white-space:nowrap">${wo.wo_number||''}</span></td>
+      <td style="white-space:nowrap">${fmtDate(wo.issue_date)}</td>
+      <td style="color:#666;white-space:nowrap">${fmtDate(wo.due_limit)}</td>
       <td style="font-weight:600">${wo.aircraft||''}</td>
-      <td style="font-size:12px;color:#555">${wo.issued_by||''}</td>
-      <td style="font-size:12px;color:#555">${wo.part_145||''}</td>
-      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(wo.description||'').replace(/"/g,'&quot;')}">${wo.description||''}</td>
-      <td style="white-space:nowrap;font-size:12px">${fmtDate(wo.closed_date)}</td>
+      <td style="color:#555">${wo.issued_by||''}</td>
+      <td style="color:#555">${wo.part_145||''}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(wo.description||'').replace(/"/g,'&quot;')}">${wo.description||''}</td>
+      <td style="white-space:nowrap;color:#666">${fmtDate(wo.closed_date)}</td>
       <td style="text-align:center">${yesNo(wo.cmp_updated)}</td>
-      <td>
+      <td style="white-space:nowrap">
         <div style="display:flex;align-items:center;gap:5px">
           <div style="width:9px;height:9px;border-radius:50%;background:${ds.dot};flex-shrink:0"></div>
-          <span style="font-size:11px;font-weight:500;color:#333">${ds.label}</span>
+          <span style="font-size:11px;font-weight:600;color:#333">${ds.label}</span>
         </div>
       </td>
       <td style="text-align:center">${yesNo(wo.package_received)}</td>
       <td style="text-align:center">${yesNo(wo.wp_filed)}</td>
-      <td style="font-size:11px;color:#555;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${wo.location||''}</td>
+      <td style="color:#555;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(wo.location||'').replace(/"/g,'&quot;')}">${wo.location||''}</td>
       <td style="text-align:center">${yesNo(wo.cmp_component_list)}</td>
-      <td style="text-align:center;font-size:12px">${wo.form_completed||'—'}</td>
-      <td style="font-size:12px;color:#555">${wo.entered_by||''}</td>
-      <td style="font-size:11px;color:#777;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(wo.remarks||'').replace(/"/g,'&quot;')}">${wo.remarks||''}</td>
+      <td style="text-align:center">${wo.form_completed||'<span style="color:#ddd">—</span>'}</td>
+      <td style="color:#555">${wo.entered_by||''}</td>
+      <td style="color:#777;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(wo.remarks||'').replace(/"/g,'&quot;')}">${wo.remarks||''}</td>
+      <td>
+        <div class="action-cell">
+          ${canEdit   ? `<button class="btn-edit" onclick="openEdit('${wo.id}')">✏️</button>` : ''}
+          ${canDelete ? `<button class="btn-del"  onclick="deleteWO('${wo.id}','${wo.wo_number}')">🗑</button>` : ''}
+        </div>
+      </td>
     </tr>`
   }).join('')
 }
 
+// Stats filter
+document.querySelectorAll('.stat').forEach(el=>{
+  el.addEventListener('click',()=>{
+    filterStatus=filterStatus===el.dataset.filter?'':el.dataset.filter
+    document.querySelectorAll('.stat').forEach(s=>s.classList.toggle('active',s.dataset.filter===filterStatus&&filterStatus!==''))
+    document.getElementById('filter-status').value=filterStatus
+    applyFilters()
+  })
+})
+
 document.getElementById('search').addEventListener('input',applyFilters)
 document.getElementById('filter-aircraft').addEventListener('change',applyFilters)
 document.getElementById('filter-year').addEventListener('change',applyFilters)
-document.getElementById('filter-status').addEventListener('change',applyFilters)
+document.getElementById('filter-status').addEventListener('change',e=>{
+  filterStatus=e.target.value
+  document.querySelectorAll('.stat').forEach(s=>s.classList.toggle('active',s.dataset.filter===filterStatus&&filterStatus!==''))
+  applyFilters()
+})
 document.querySelectorAll('thead th[data-col]').forEach(th=>{
   th.addEventListener('click',()=>{
     sortDir=sortCol===th.dataset.col?(sortDir==='asc'?'desc':'asc'):'asc'
@@ -298,9 +358,8 @@ function generateWONumber() {
   const now=new Date()
   const yy=String(now.getFullYear()).slice(2)
   const mm=String(now.getMonth()+1).padStart(2,'0')
-  const dd=String(now.getDate()).padStart(2,'0')
-  const aa=String(allWOs.filter(w=>w.wo_number&&w.wo_number.startsWith(`GJ${yy}${mm}`)).length+1).padStart(3,'0')
-  return `GJ${yy}${mm}${dd}${aa}`
+  const count=String(allWOs.filter(w=>w.wo_number&&w.wo_number.startsWith(`GJ${yy}${mm}`)).length+1).padStart(4,'0')
+  return `GJ${yy}${mm}${count}`
 }
 
 function openModal(title){
@@ -318,8 +377,9 @@ document.getElementById('btn-new').addEventListener('click',()=>{
   const now=new Date()
   document.getElementById('f-wo').value=generateWONumber()
   document.getElementById('f-date').value=now.toISOString().slice(0,10)
-  ;['f-aircraft','f-issued','f-part145','f-due','f-closed','f-desc','f-loc','f-entered','f-cmplist','f-remarks'].forEach(id=>document.getElementById(id).value='')
-  ;['f-status'].forEach(id=>document.getElementById(id).value='OPEN')
+  ;['f-aircraft','f-issued','f-part145','f-closed','f-desc','f-loc','f-entered','f-cmplist','f-remarks'].forEach(id=>document.getElementById(id).value='')
+  document.getElementById('f-due').value=''
+  document.getElementById('f-status').value='OPEN'
   ;['f-wp','f-cmp','f-pkg','f-form'].forEach(id=>document.getElementById(id).value='')
   openModal('New work order')
 })
@@ -383,10 +443,21 @@ document.getElementById('btn-save').addEventListener('click',async()=>{
   finally{btn.disabled=false;btn.textContent='Save work order'}
 })
 
+// Delete → αποθηκεύεται στο gainjet_deletedWOs πριν διαγραφεί
 window.deleteWO=async(id,woNum)=>{
-  if(!confirm(`Delete WO ${woNum}?`))return
-  try{await deleteDoc(doc(db,COLLECTION,id));showToast('Deleted','success')}
-  catch(err){showToast('Error: '+err.message,'error')}
+  if(!confirm(`Delete WO ${woNum}?\nΘα αποθηκευτεί στο αρχείο διεγραμμένων.`))return
+  try{
+    const wo=allWOs.find(w=>w.id===id)
+    if(wo){
+      await setDoc(doc(db,DELETED_COLLECTION,id),{
+        ...wo,
+        deleted_at:serverTimestamp(),
+        original_id:id
+      })
+    }
+    await deleteDoc(doc(db,COLLECTION,id))
+    showToast(`WO ${woNum} deleted & archived`,'success')
+  }catch(err){showToast('Error: '+err.message,'error')}
 }
 </script>
 </body>
