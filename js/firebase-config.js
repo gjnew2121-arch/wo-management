@@ -1,12 +1,12 @@
 // ΕΔΩ ΒΑΖΕΙΣ ΤΑ ΔΙΚΑ ΣΟΥ ΣΤΟΙΧΕΙΑ
 // Firebase Console → Project Settings → Your apps → Web app
 const firebaseConfig = {
-  apiKey:            "YOUR_API_KEY",
-  authDomain:        "YOUR_PROJECT.firebaseapp.com",
-  projectId:         "YOUR_PROJECT_ID",
-  storageBucket:     "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId:             "YOUR_APP_ID"
+  apiKey:            "AIzaSyDVWVXKhxg0nEK08D20BOKJKyomf30-5ZE",
+  authDomain:        "worecord-e9fe8.firebaseapp.com",
+  projectId:         "worecord-e9fe8",
+  storageBucket:     "worecord-e9fe8.firebasestorage.app",
+  messagingSenderId: "443518548336",
+  appId:             "1:443518548336:web:6f9fbad37d319ae9c6b7b5"
 }
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"
