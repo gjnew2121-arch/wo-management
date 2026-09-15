@@ -35,6 +35,16 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Deleted WOs archive
+    match /gainjet_deletedWOs/{id} {
+      allow read:  if isAdmin();
+      allow write: if isAdmin() || isEditor();
+    }
+    match /gjet_deletedWOs/{id} {
+      allow read:  if isAdmin();
+      allow write: if isAdmin() || isEditor();
+    }
+
     // Users
     match /users/{uid} {
       allow read:  if request.auth != null && (request.auth.uid == uid || isAdmin());
