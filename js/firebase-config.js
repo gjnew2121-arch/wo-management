@@ -1,5 +1,3 @@
-// ΕΔΩ ΒΑΖΕΙΣ ΤΑ ΔΙΚΑ ΣΟΥ ΣΤΟΙΧΕΙΑ
-// Firebase Console → Project Settings → Your apps → Web app
 const firebaseConfig = {
   apiKey:            "AIzaSyDVWVXKhxg0nEK08D20BOKJKyomf30-5ZE",
   authDomain:        "worecord-e9fe8.firebaseapp.com",
