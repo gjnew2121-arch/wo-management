@@ -3,7 +3,7 @@ import { getAuth }       from "https://www.gstatic.com/firebasejs/10.7.0/firebas
 import { getFirestore }  from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"
 
 export const firebaseConfig = {
-  apiKey:            "AIzaSyDVWVXKhxg0nEK08D20BOKJKyomf30-5ZE",
+  apiKey:            "AIzaSyDVWVXKhxg0nEK08D2OBOKJKyomf30-5ZE",
   authDomain:        "worecord-e9fe8.firebaseapp.com",
   projectId:         "worecord-e9fe8",
   storageBucket:     "worecord-e9fe8.firebasestorage.app",
