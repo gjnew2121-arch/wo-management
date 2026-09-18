@@ -1,120 +1,227 @@
+#!/usr/bin/env python3
 """
-IMPORT SCRIPT — διαβάζει το Excel και το ανεβάζει στο Firestore
-----------------------------------------------------------------
-1. pip install firebase-admin openpyxl pandas
-2. Βάλε serviceAccountKey.json στον ίδιο φάκελο
-3. py import_excel.py
+Import GainJet & GJet Excel data → Firestore
+Usage: python import_excel.py <path_to_excel.xlsx>
 """
 
+import sys, re, math
 import pandas as pd
 import firebase_admin
 from firebase_admin import credentials, firestore
-from datetime import datetime
-import math
 
-EXCEL_FILE   = "WORK_ORDER_LIST__12_.xlsx"
-SERVICE_ACCT = "serviceAccountKey.json"
-
-# GainJet χρόνια
-GAINJET_SHEETS = ['2026', '2025', '2024', '2023', '2022', '2021', '2020', '2019', '2018']
-GAINJET_COLLECTION = "gainjet_workOrders"
-
-# GJet SM WO
-GJET_SHEETS = ['GJET SM WO']
-GJET_COLLECTION = "gjet_workOrders"
-
-cred = credentials.Certificate(SERVICE_ACCT)
+# ── INIT ─────────────────────────────────────────────────────────────────────
+cred = credentials.Certificate("serviceAccountKey.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-def clean(val):
-    if val is None: return ""
-    if isinstance(val, float) and math.isnan(val): return ""
-    if isinstance(val, datetime): return val.strftime("%Y-%m-%d")
-    s = str(val).strip()
-    return "" if s.lower() == "nan" else s
+EXCEL_FILE = sys.argv[1] if len(sys.argv) > 1 else "workorders.xlsx"
 
-def parse_status(row):
-    s = clean(row.get("STATUS", "")).upper()
-    return s if s in ("OPEN","CLOSED","CNX","PENDING") else "OPEN"
+# ── GAINJET SHEETS ────────────────────────────────────────────────────────────
+GAINJET_SHEETS = ['2026','2025','2024','2023','2022','2021','2020','2019','2018']
+GJET_SHEETS    = ['GJET SM WO']
 
-def parse_yesno(row, key):
-    v = clean(row.get(key, "")).upper()
-    if v == "YES": return "YES"
-    if "PENDING" in v: return "PENDING"
-    return ""
+# ── COLUMN FINDER ─────────────────────────────────────────────────────────────
+def norm(s):
+    return re.sub(r'\s+', ' ', str(s).strip().upper())
 
-def import_sheets(sheets, collection):
-    total = 0
-    errors = 0
-    for sheet in sheets:
-        print(f"\n📋 Sheet: {sheet}")
+def find_col(df, *candidates):
+    cols = {norm(c): c for c in df.columns}
+    for cand in candidates:
+        key = norm(cand)
+        if key in cols:
+            return cols[key]
+    # partial match
+    for cand in candidates:
+        key = norm(cand)
+        for col_norm, col_orig in cols.items():
+            if key in col_norm or col_norm in key:
+                return col_orig
+    return None
+
+def safe(val):
+    if val is None: return ''
+    if isinstance(val, float) and math.isnan(val): return ''
+    return str(val).strip()
+
+def parse_date(val):
+    if not val or (isinstance(val, float) and math.isnan(val)):
+        return None
+    try:
+        return pd.to_datetime(val).strftime('%Y-%m-%d')
+    except:
+        return safe(val) or None
+
+# ── IMPORT GAINJET ────────────────────────────────────────────────────────────
+def import_gainjet():
+    col_ref = db.collection('gainjet_workOrders')
+    print("Deleting existing gainjet_workOrders...")
+    for d in col_ref.stream():
+        d.reference.delete()
+
+    all_records = []
+    for sheet in GAINJET_SHEETS:
         try:
-            df = pd.read_excel(EXCEL_FILE, sheet_name=sheet, header=0, dtype=str)
+            df = pd.read_excel(EXCEL_FILE, sheet_name=sheet, header=0)
         except Exception as e:
-            print(f"  ⚠️  Skipping: {e}"); continue
-
-        df.columns = [str(c).strip() for c in df.columns]
-
-        # Βρες το year
-        try:
-            year = int(sheet)
-        except:
-            year = 0
-
-        batch = db.batch()
-        count = 0
+            print(f"  Sheet '{sheet}' not found or error: {e}")
+            continue
+        # Normalize column names
+        df.columns = [re.sub(r'\s+', ' ', str(c).strip()) for c in df.columns]
+        print(f"  Sheet '{sheet}': {len(df)} rows, cols: {list(df.columns)}")
 
         for _, row in df.iterrows():
-            wo_num = clean(row.get("WO NUM", ""))
-            if not wo_num or wo_num.upper() in ("WO NUM","NAN",""): continue
+            aa_col     = find_col(df, 'A/A', 'AA', 'Α/Α', 'No', 'NUM')
+            wo_col     = find_col(df, 'WO NUM', 'WO NUMBER', 'WO')
+            date_col   = find_col(df, 'ISSUE DATE', 'DATE ISSUED', 'DATE')
+            due_col    = find_col(df, 'DUE LIMIT', 'DUE')
+            ac_col     = find_col(df, 'AIRCRAFT', 'A/C')
+            by_col     = find_col(df, 'ISSUED BY', 'ISSUED')
+            p145_col   = find_col(df, 'PART 145')
+            desc_col   = find_col(df, 'DESCRIPTION', 'DESC')
+            closed_col = find_col(df, 'CLOSED DATE', 'CLOSE DATE', 'CLOSED')
+            cmp_col    = find_col(df, 'CMP/TRXL', 'CMP TRXL', 'CMP')
+            status_col = find_col(df, 'STATUS')
+            pkg_col    = find_col(df, 'PKG RCV', 'PKG')
+            wp_col     = find_col(df, 'WP FILED', 'WP')
+            loc_col    = find_col(df, 'LOCATION', 'LOC')
+            cmplist_col= find_col(df, 'CMP LIST', 'COMP LIST')
+            m28_col    = find_col(df, 'FORM M-28', 'M-28', 'M28')
+            entby_col  = find_col(df, 'ENTERED BY', 'ENTRY BY')
+            rem_col    = find_col(df, 'REMARKS', 'REM')
+
+            # Parse serial number (A/A)
+            aa_raw = safe(row[aa_col]) if aa_col else ''
             try:
-                ref = db.collection(collection).document()
-                batch.set(ref, {
-                    "wo_number":          wo_num,
-                    "issue_date":         clean(row.get("ISSUE DATE", "")),
-                    "due_limit":          clean(row.get("DUE LIMIT (DATE/HRS/CLS) ", row.get("DUE LIMIT (DATE/HRS/CLS)", ""))),
-                    "aircraft":           clean(row.get("AIRCRAFT", "")),
-                    "issued_by":          clean(row.get("ISSUED BY (TAB ADDED 01/01/2018)", row.get("ISSUED BY", ""))),
-                    "part_145":           clean(row.get("PART 145", "")),
-                    "description":        clean(row.get("DESCRIPTION", "")),
-                    "closed_date":        clean(row.get("CLOSED DATE", "")),
-                    "cmp_updated":        clean(row.get("CMP/ TRXL UPDATED", row.get("CMP UPDATED", row.get("CMP/ TRXL UPDATED ", "")))),
-                    "status":             parse_status(row),
-                    "package_received":   parse_yesno(row, "ORIGINAL PACKAGE RECEIVED"),
-                    "wp_filed":           parse_yesno(row, "WP FILED"),
-                    "location":           clean(row.get("LOCATION", "")),
-                    "cmp_component_list": clean(row.get("CMP/TRXL COMPONENT LIST UPDATED (IF APPLICABLE)", "")),
-                    "form_completed":     clean(row.get("FORM GJ/M-28 COMPLETED    (IF REQUIRED)", "")),
-                    "entered_by":         clean(row.get("ENTERED BY", "")),
-                    "remarks":            clean(row.get("REMARKS (TAB ENTERED 20/11/2019)", row.get("REMARKS", ""))),
-                    "year":               year,
-                    "created_at":         firestore.SERVER_TIMESTAMP,
-                    "updated_at":         firestore.SERVER_TIMESTAMP,
-                })
-                count += 1
-                if count % 400 == 0:
-                    batch.commit(); batch = db.batch()
-                    print(f"  ✅ {count} committed…")
-            except Exception as e:
-                errors += 1; print(f"  ❌ {wo_num}: {e}")
+                serial_number = int(float(aa_raw)) if aa_raw else None
+            except:
+                serial_number = None
 
-        if count % 400 != 0: batch.commit()
-        total += count
-        print(f"  ✅ {count} records → {collection}")
-    return total, errors
+            wo_num = safe(row[wo_col]) if wo_col else ''
+            if not wo_num and not serial_number:
+                continue  # skip empty rows
 
-print("=" * 50)
-print("GAINJET Import")
-print("=" * 50)
-t1, e1 = import_sheets(GAINJET_SHEETS, GAINJET_COLLECTION)
+            status_raw = safe(row[status_col]).upper() if status_col else ''
+            if 'CNX' in status_raw or 'CANCEL' in status_raw:
+                status = 'CNX'
+            elif 'CLOSE' in status_raw or 'CMP' in status_raw or 'COMP' in status_raw:
+                status = 'CLOSED'
+            else:
+                status = 'OPEN'
 
-print("\n" + "=" * 50)
-print("GJET SM WO Import")
-print("=" * 50)
-t2, e2 = import_sheets(GJET_SHEETS, GJET_COLLECTION)
+            record = {
+                'serial_number': serial_number,
+                'wo_number':     wo_num,
+                'issue_date':    parse_date(row[date_col])   if date_col   else None,
+                'due_limit':     safe(row[due_col])           if due_col    else '',
+                'aircraft':      safe(row[ac_col])            if ac_col     else '',
+                'issued_by':     safe(row[by_col])            if by_col     else '',
+                'part_145':      safe(row[p145_col])          if p145_col   else '',
+                'description':   safe(row[desc_col])          if desc_col   else '',
+                'closed_date':   parse_date(row[closed_col])  if closed_col else None,
+                'cmp_trxl':      safe(row[cmp_col])           if cmp_col    else '',
+                'status':        status,
+                'pkg_rcv':       safe(row[pkg_col])           if pkg_col    else '',
+                'wp_filed':      safe(row[wp_col])            if wp_col     else '',
+                'location':      safe(row[loc_col])           if loc_col    else '',
+                'cmp_list':      safe(row[cmplist_col])       if cmplist_col else '',
+                'form_m28':      safe(row[m28_col])           if m28_col    else '',
+                'entered_by':    safe(row[entby_col])         if entby_col  else '',
+                'remarks':       safe(row[rem_col])           if rem_col    else '',
+                'source_sheet':  sheet,
+            }
+            all_records.append(record)
 
-print(f"\n🎉 Done!")
-print(f"   GAINJET: {t1} imported")
-print(f"   GJET:    {t2} imported")
-print(f"   Errors:  {e1+e2}")
+    print(f"Importing {len(all_records)} GainJet records...")
+    for rec in all_records:
+        col_ref.add(rec)
+    print(f"  Done: {len(all_records)} records imported to gainjet_workOrders")
+
+
+# ── IMPORT GJET ───────────────────────────────────────────────────────────────
+def import_gjet():
+    col_ref = db.collection('gjet_workOrders')
+    print("Deleting existing gjet_workOrders...")
+    for d in col_ref.stream():
+        d.reference.delete()
+
+    all_records = []
+    for sheet in GJET_SHEETS:
+        try:
+            df = pd.read_excel(EXCEL_FILE, sheet_name=sheet, header=0)
+        except Exception as e:
+            print(f"  Sheet '{sheet}' not found or error: {e}")
+            continue
+        df.columns = [re.sub(r'\s+', ' ', str(c).strip()) for c in df.columns]
+        print(f"  Sheet '{sheet}': {len(df)} rows, cols: {list(df.columns)}")
+
+        for _, row in df.iterrows():
+            aa_col     = find_col(df, 'A/A', 'AA', 'Α/Α', 'No', 'NUM')
+            wo_col     = find_col(df, 'WO NUM', 'WO NUMBER', 'WO')
+            date_col   = find_col(df, 'ISSUE DATE', 'DATE ISSUED', 'DATE')
+            due_col    = find_col(df, 'DUE LIMIT', 'DUE')
+            ac_col     = find_col(df, 'AIRCRAFT', 'A/C')
+            by_col     = find_col(df, 'ISSUED BY', 'ISSUED')
+            p145_col   = find_col(df, 'PART 145')
+            desc_col   = find_col(df, 'DESCRIPTION', 'DESC')
+            closed_col = find_col(df, 'CLOSED DATE', 'CLOSE DATE', 'CLOSED')
+            cmp_col    = find_col(df, 'CMP/TRXL', 'CMP TRXL', 'CMP')
+            status_col = find_col(df, 'STATUS')
+            pkg_col    = find_col(df, 'PKG RCV', 'PKG')
+            wp_col     = find_col(df, 'WP FILED', 'WP')
+            loc_col    = find_col(df, 'LOCATION', 'LOC')
+            cmplist_col= find_col(df, 'CMP LIST', 'COMP LIST')
+            m28_col    = find_col(df, 'FORM M-28', 'M-28', 'M28')
+            entby_col  = find_col(df, 'ENTERED BY', 'ENTRY BY')
+            rem_col    = find_col(df, 'REMARKS', 'REM')
+
+            aa_raw = safe(row[aa_col]) if aa_col else ''
+            try:
+                serial_number = int(float(aa_raw)) if aa_raw else None
+            except:
+                serial_number = None
+
+            wo_num = safe(row[wo_col]) if wo_col else ''
+            if not wo_num and not serial_number:
+                continue
+
+            status_raw = safe(row[status_col]).upper() if status_col else ''
+            if 'CNX' in status_raw or 'CANCEL' in status_raw:
+                status = 'CNX'
+            elif 'CLOSE' in status_raw or 'CMP' in status_raw or 'COMP' in status_raw:
+                status = 'CLOSED'
+            else:
+                status = 'OPEN'
+
+            record = {
+                'serial_number': serial_number,
+                'wo_number':     wo_num,
+                'issue_date':    parse_date(row[date_col])   if date_col   else None,
+                'due_limit':     safe(row[due_col])           if due_col    else '',
+                'aircraft':      safe(row[ac_col])            if ac_col     else '',
+                'issued_by':     safe(row[by_col])            if by_col     else '',
+                'part_145':      safe(row[p145_col])          if p145_col   else '',
+                'description':   safe(row[desc_col])          if desc_col   else '',
+                'closed_date':   parse_date(row[closed_col])  if closed_col else None,
+                'cmp_trxl':      safe(row[cmp_col])           if cmp_col    else '',
+                'status':        status,
+                'pkg_rcv':       safe(row[pkg_col])           if pkg_col    else '',
+                'wp_filed':      safe(row[wp_col])            if wp_col     else '',
+                'location':      safe(row[loc_col])           if loc_col    else '',
+                'cmp_list':      safe(row[cmplist_col])       if cmplist_col else '',
+                'form_m28':      safe(row[m28_col])           if m28_col    else '',
+                'entered_by':    safe(row[entby_col])         if entby_col  else '',
+                'remarks':       safe(row[rem_col])           if rem_col    else '',
+                'source_sheet':  sheet,
+            }
+            all_records.append(record)
+
+    print(f"Importing {len(all_records)} GJet records...")
+    for rec in all_records:
+        col_ref.add(rec)
+    print(f"  Done: {len(all_records)} records imported to gjet_workOrders")
+
+
+if __name__ == '__main__':
+    import_gainjet()
+    import_gjet()
+    print("\n✅ Import complete!")
