@@ -481,7 +481,7 @@ function renderTable() {
       <td><b>${aa}</b></td>
       <td>${wo.wo_number || ''}</td>
       <td>${fmtDate(wo.issue_date)}</td>
-      <td>${wo.due_limit || ''}</td>
+      <td>${fmtDate(wo.due_limit) || wo.due_limit || ''}</td>
       <td>${wo.aircraft || ''}</td>
       <td>${wo.issued_by || ''}</td>
       <td>${wo.part_145 || ''}</td>
