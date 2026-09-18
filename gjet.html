@@ -271,14 +271,14 @@ const db   = getFirestore(app)
 
 const COLLECTION  = 'gjet_workOrders'
 const DEL_COLL    = 'gjet_deletedWOs'
-const SESSION_KEY = 'wosession'
+const SESSION_KEY = 'wo_login_time'
 const SESSION_TTL = 86400000
 
 // ── SESSION ──────────────────────────────────────────────────────────────────
-const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null')
-if (!s || Date.now() - s.ts > SESSION_TTL) {
+const _st = localStorage.getItem(SESSION_KEY)
+if (!_st || (Date.now() - parseInt(_st)) > SESSION_TTL) {
   localStorage.removeItem(SESSION_KEY)
-  location.href = 'login.html'
+  location.href = 'index.html'
 }
 
 // ── GLOBALS ──────────────────────────────────────────────────────────────────
@@ -645,7 +645,7 @@ document.getElementById('newWOBtn').addEventListener('click', () => openModal())
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   localStorage.removeItem(SESSION_KEY)
   await signOut(auth)
-  location.href = 'login.html'
+  location.href = 'index.html'
 })
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
