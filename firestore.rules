@@ -2,52 +2,55 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function userData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    // ── HELPERS ──────────────────────────────────────────────────────────────
+    function isAuth()    { return request.auth != null; }
+    function isAdmin()   { return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'; }
+    function isEditor()  { return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'editor'; }
+    function isAdminOrEditor() { return isAdmin() || isEditor(); }
+
+    function userCompany() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.company;
     }
-    function role()    { return userData().role; }
-    function company() { return userData().company; }
-
-    function isAdmin()  { return request.auth != null && role() == 'admin'; }
-    function isEditor() { return request.auth != null && role() in ['admin','editor']; }
-    function isViewer() { return request.auth != null && role() in ['admin','editor','viewer']; }
-
     function canAccessGainjet() {
-      return isViewer() && (company() in ['GAINJET','both'] || role() == 'admin');
+      return isAdmin() || userCompany() == 'GAINJET' || userCompany() == 'both';
     }
     function canAccessGjet() {
-      return isViewer() && (company() in ['GJET','both'] || role() == 'admin');
+      return isAdmin() || userCompany() == 'GJET' || userCompany() == 'both';
     }
 
-    // GainJet Work Orders
+    // ── GAINJET WORK ORDERS ───────────────────────────────────────────────────
     match /gainjet_workOrders/{id} {
-      allow read:   if canAccessGainjet();
-      allow create: if isEditor() && (company() in ['GAINJET','both'] || role()=='admin');
-      allow update: if isEditor() && (company() in ['GAINJET','both'] || role()=='admin');
-      allow delete: if isAdmin();
+      allow read:   if isAuth() && canAccessGainjet();
+      allow create: if isAuth() && canAccessGainjet() && isAdminOrEditor();
+      allow update: if isAuth() && canAccessGainjet() && isAdminOrEditor();
+      allow delete: if isAuth() && canAccessGainjet() && isAdminOrEditor();
     }
 
-    // GJet SM Work Orders
-    match /gjet_workOrders/{id} {
-      allow read:   if canAccessGjet();
-      allow create: if isEditor() && (company() in ['GJET','both'] || role()=='admin');
-      allow update: if isEditor() && (company() in ['GJET','both'] || role()=='admin');
-      allow delete: if isAdmin();
-    }
-
-    // Deleted WOs archive
+    // ── GAINJET DELETED (archive) ─────────────────────────────────────────────
     match /gainjet_deletedWOs/{id} {
-      allow read:  if isAdmin();
-      allow write: if isAdmin() || isEditor();
-    }
-    match /gjet_deletedWOs/{id} {
-      allow read:  if isAdmin();
-      allow write: if isAdmin() || isEditor();
+      allow read:   if isAuth() && isAdmin();
+      allow create: if isAuth() && canAccessGainjet() && isAdminOrEditor();
+      allow delete: if isAuth() && isAdmin();
     }
 
-    // Users
+    // ── GJET WORK ORDERS ──────────────────────────────────────────────────────
+    match /gjet_workOrders/{id} {
+      allow read:   if isAuth() && canAccessGjet();
+      allow create: if isAuth() && canAccessGjet() && isAdminOrEditor();
+      allow update: if isAuth() && canAccessGjet() && isAdminOrEditor();
+      allow delete: if isAuth() && canAccessGjet() && isAdminOrEditor();
+    }
+
+    // ── GJET DELETED (archive) ────────────────────────────────────────────────
+    match /gjet_deletedWOs/{id} {
+      allow read:   if isAuth() && isAdmin();
+      allow create: if isAuth() && canAccessGjet() && isAdminOrEditor();
+      allow delete: if isAuth() && isAdmin();
+    }
+
+    // ── USERS ─────────────────────────────────────────────────────────────────
     match /users/{uid} {
-      allow read:  if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow read:  if isAuth() && (request.auth.uid == uid || isAdmin());
       allow write: if isAdmin();
     }
   }
