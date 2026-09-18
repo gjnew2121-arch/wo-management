@@ -1,89 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GainJet — Work Orders</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GainJet Work Orders</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; }
+
+  nav { background: #1565c0; color: #fff; padding: 0 16px; display: flex; align-items: center; gap: 12px; height: 52px; }
+  nav .logo { font-weight: 700; font-size: 1.1rem; letter-spacing: .5px; }
+  nav a { color: #fff; text-decoration: none; font-size: .88rem; opacity: .85; }
+  nav a:hover { opacity: 1; }
+  nav .spacer { flex: 1; }
+  #userInfo { font-size: .82rem; opacity: .8; }
+  #logoutBtn { background: rgba(255,255,255,.15); border: none; color: #fff; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: .82rem; }
+  #logoutBtn:hover { background: rgba(255,255,255,.28); }
+
+  .controls { background: #fff; border-bottom: 1px solid #ddd; padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .controls input, .controls select { border: 1px solid #ccc; border-radius: 4px; padding: 6px 10px; font-size: .85rem; }
+  .controls input[type=text] { width: 200px; }
+  .btn { padding: 6px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: .85rem; font-weight: 600; }
+  .btn-primary { background: #1565c0; color: #fff; }
+  .btn-primary:hover { background: #0d47a1; }
+  .btn-danger  { background: #c62828; color: #fff; }
+  .btn-danger:hover  { background: #b71c1c; }
+  .btn-sm { padding: 3px 9px; font-size: .78rem; }
+
+  .stats { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 16px; background: #fff; border-bottom: 1px solid #eee; }
+  .stat-card { background: #f0f4ff; border: 1px solid #c5cae9; border-radius: 6px; padding: 6px 14px; font-size: .82rem; text-align: center; min-width: 90px; }
+  .stat-card .num { font-size: 1.2rem; font-weight: 700; color: #1565c0; }
+  .stat-card .lbl { color: #555; }
+  .stat-card.green { background: rgba(76,175,80,.18); border-color: #4caf50; }
+  .stat-card.green .num { color: #2e7d32; }
+  .stat-card.blue  { background: rgba(33,150,243,.18); border-color: #2196f3; }
+  .stat-card.blue  .num { color: #1565c0; }
+  .stat-card.red   { background: rgba(244,67,54,.18);  border-color: #f44336; }
+  .stat-card.red   .num { color: #c62828; }
+
+  .table-wrap { overflow-x: auto; max-height: calc(100vh - 210px); }
+  table { width: 100%; border-collapse: collapse; font-size: .82rem; min-width: 1400px; }
+  thead th { background: #1565c0; color: #fff; padding: 8px 6px; position: sticky; top: 0; z-index: 2; white-space: nowrap; text-align: left; cursor: pointer; user-select: none; }
+  thead th:hover { background: #0d47a1; }
+  tbody tr { border-bottom: 1px solid #e0e0e0; }
+  tbody tr:hover { filter: brightness(.96); }
+  td { padding: 6px 6px; vertical-align: middle; white-space: nowrap; }
+  td.wrap { white-space: normal; min-width: 180px; max-width: 260px; word-break: break-word; }
+
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+
+  .pagination { display: flex; align-items: center; gap: 6px; padding: 10px 16px; background: #fff; border-top: 1px solid #eee; flex-wrap: wrap; }
+  .pagination button { border: 1px solid #ccc; background: #fff; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: .82rem; }
+  .pagination button:disabled { opacity: .4; cursor: default; }
+  .pagination button.active { background: #1565c0; color: #fff; border-color: #1565c0; }
+  .pagination select { border: 1px solid #ccc; border-radius: 4px; padding: 4px 6px; font-size: .82rem; }
+  .page-info { font-size: .82rem; color: #555; margin-left: 8px; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #fff; border-radius: 8px; width: 700px; max-width: 96vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,.25); }
+  .modal-header { background: #1565c0; color: #fff; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; border-radius: 8px 8px 0 0; }
+  .modal-header h3 { font-size: 1rem; }
+  .modal-close { background: none; border: none; color: #fff; font-size: 1.3rem; cursor: pointer; line-height: 1; }
+  .modal-body { padding: 18px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group.full { grid-column: 1/-1; }
+  .form-group label { font-size: .8rem; font-weight: 600; color: #444; }
+  .form-group input, .form-group select, .form-group textarea { border: 1px solid #ccc; border-radius: 4px; padding: 7px 10px; font-size: .85rem; }
+  .form-group textarea { resize: vertical; min-height: 60px; }
+  .modal-footer { padding: 12px 18px; border-top: 1px solid #eee; display: flex; gap: 8px; justify-content: flex-end; }
+
+  .toast { position: fixed; bottom: 20px; right: 20px; background: #323232; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: .88rem; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  .toast.success { background: #2e7d32; }
+  .toast.error   { background: #c62828; }
+
+  .loading { text-align: center; padding: 40px; color: #888; }
+  .empty   { text-align: center; padding: 40px; color: #aaa; font-size: .95rem; }
+</style>
 </head>
 <body>
 
 <nav>
-  <a href="home.html" class="nav-logo"><div class="nav-dot-gainjet"></div>GainJet</a>
-  <a href="gainjet.html" class="nav-link active" data-page="gainjet">Work Orders</a>
-  <a href="admin.html" class="nav-link" data-page="admin" id="nav-admin" style="display:none">Users</a>
-  <div class="nav-right">
-    <span class="nav-user" id="nav-user"></span>
-    <span class="role-badge" id="nav-role"></span>
-    <span class="company-badge company-gainjet">GAINJET</span>
-    <button class="btn-signout" id="btn-signout">Sign out</button>
-  </div>
+  <span class="logo">✈ GainJet WO</span>
+  <a href="index.html">🏠 Home</a>
+  <div class="spacer"></div>
+  <span id="userInfo"></span>
+  <button id="logoutBtn">Logout</button>
 </nav>
 
-<!-- STATS -->
-<div class="stats-bar">
-  <div class="stat" data-filter="OPEN">
-    <div class="stat-val" id="count-OPEN">—</div>
-    <div class="stat-lbl"><div class="stat-dot" style="background:#9e9e9e"></div>Open WO</div>
-  </div>
-  <div class="stat" data-filter="CLOSED">
-    <div class="stat-val" id="count-CLOSED">—</div>
-    <div class="stat-lbl"><div class="stat-dot" style="background:#2e7d32"></div>WO Completed</div>
-  </div>
-  <div class="stat" data-filter="DOCS">
-    <div class="stat-val" id="count-DOCS">—</div>
-    <div class="stat-lbl"><div class="stat-dot" style="background:#1565c0"></div>Docs in office</div>
-  </div>
-  <div class="stat" data-filter="CNX">
-    <div class="stat-val" id="count-CNX">—</div>
-    <div class="stat-lbl"><div class="stat-dot" style="background:#c62828"></div>Cancelled</div>
-  </div>
-</div>
-
-<!-- TOOLBAR -->
-<div class="toolbar">
-  <div class="search-wrap">
-    <span class="search-icon">🔍</span>
-    <input type="text" id="search" placeholder="Search WO, aircraft, description…" style="padding-left:28px">
-  </div>
-  <select id="filter-aircraft"><option value="">All aircraft</option></select>
-  <select id="filter-year"><option value="">All years</option></select>
-  <select id="filter-status"><option value="">All statuses</option>
+<div class="controls">
+  <input type="text" id="searchInput" placeholder="Search WO…">
+  <select id="statusFilter">
+    <option value="">All Statuses</option>
     <option value="OPEN">Open WO</option>
     <option value="CLOSED">WO Completed</option>
-    <option value="DOCS">Docs in office</option>
+    <option value="DOCS">Docs in Office</option>
     <option value="CNX">Cancelled</option>
   </select>
-  <span class="record-count" id="record-count"></span>
-  <button class="btn btn-blue" id="btn-new" style="margin-left:auto;display:none">+ New WO</button>
+  <select id="aircraftFilter"><option value="">All Aircraft</option></select>
+  <select id="yearFilter"><option value="">All Years</option></select>
+  <div class="spacer" style="flex:1"></div>
+  <button class="btn btn-primary" id="newWOBtn" style="display:none">+ New WO</button>
 </div>
 
-<!-- LEGEND -->
-<div class="legend">
-  <div class="legend-item"><div class="leg-swatch" style="background:#fff;border:1.5px solid #ccc"></div>Open WO</div>
-  <div class="legend-item"><div class="leg-swatch" style="background:rgba(76,175,80,0.25);border:1.5px solid #4caf50"></div>WO Completed</div>
-  <div class="legend-item"><div class="leg-swatch" style="background:rgba(33,150,243,0.25);border:1.5px solid #2196f3"></div>WO Completed – Docs in office</div>
-  <div class="legend-item"><div class="leg-swatch" style="background:rgba(244,67,54,0.22);border:1.5px solid #f44336"></div>Cancelled</div>
-</div>
+<div class="stats" id="statsBar"></div>
 
-<!-- TABLE -->
 <div class="table-wrap">
-  <table>
+  <table id="woTable">
     <thead>
       <tr>
-        <th style="width:35px">A/A</th>
-        <th data-col="wo_number">WO NUM ↕</th>
-        <th data-col="issue_date">ISSUE DATE ↕</th>
+        <th onclick="sortBy('serial_number')">A/A ↕</th>
+        <th onclick="sortBy('wo_number')">WO NUM ↕</th>
+        <th onclick="sortBy('issue_date')">ISSUE DATE ↕</th>
         <th>DUE LIMIT</th>
-        <th data-col="aircraft">AIRCRAFT ↕</th>
+        <th onclick="sortBy('aircraft')">AIRCRAFT ↕</th>
         <th>ISSUED BY</th>
         <th>PART 145</th>
         <th>DESCRIPTION</th>
         <th>CLOSED DATE</th>
         <th>CMP/TRXL</th>
-        <th data-col="status">STATUS ↕</th>
+        <th onclick="sortBy('status')">STATUS ↕</th>
         <th>PKG RCV</th>
         <th>WP FILED</th>
         <th>LOCATION</th>
@@ -91,66 +129,121 @@
         <th>FORM M-28</th>
         <th>ENTERED BY</th>
         <th>REMARKS</th>
+        <th>ACTIONS</th>
       </tr>
     </thead>
-    <tbody id="tbody">
-      <tr><td colspan="18" class="empty-state">Loading…</td></tr>
-    </tbody>
+    <tbody id="woBody"><tr><td colspan="19" class="loading">Loading…</td></tr></tbody>
   </table>
 </div>
 
-<div class="pagination">
-  <button id="btn-prev" disabled>← Prev</button>
-  <span id="page-info">Page 1</span>
-  <button id="btn-next">Next →</button>
-</div>
+<div class="pagination" id="paginationBar"></div>
 
 <!-- MODAL -->
-<div class="modal-overlay" id="modal">
-  <div class="modal" style="width:680px">
-    <div class="modal-head">
-      <h2 id="modal-title">New work order</h2>
-      <button class="modal-close" id="modal-close">✕</button>
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">New Work Order</h3>
+      <button class="modal-close" id="modalClose">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="field"><label>WO Number</label><input id="f-wo" readonly style="background:#f0f0f0;color:#888"></div>
-        <div class="field"><label>Issue date</label><input type="date" id="f-date"></div>
-        <div class="field"><label>Aircraft *</label><input id="f-aircraft" placeholder="SX-DHB"></div>
-        <div class="field"><label>Issued by</label><input id="f-issued" placeholder="TTS"></div>
-        <div class="field"><label>Part 145</label><input id="f-part145" placeholder="GNJ P-145"></div>
-        <div class="field"><label>Due limit</label><input id="f-due" placeholder="Date / HRS / CLS"></div>
-        <div class="field"><label>Status</label>
-          <select id="f-status">
-            <option value="OPEN">Open</option>
-            <option value="CLOSED">Closed</option>
-            <option value="CNX">Cancelled (CNX)</option>
+        <div class="form-group">
+          <label>WO Number (auto)</label>
+          <input type="text" id="fWoNum" readonly style="background:#f5f5f5">
+        </div>
+        <div class="form-group">
+          <label>A/A (auto)</label>
+          <input type="text" id="fAA" readonly style="background:#f5f5f5">
+        </div>
+        <div class="form-group">
+          <label>Issue Date</label>
+          <input type="date" id="fIssueDate">
+        </div>
+        <div class="form-group">
+          <label>Due Limit</label>
+          <input type="text" id="fDueLimit" placeholder="e.g. 30 DAYS / 2026-03-01">
+        </div>
+        <div class="form-group">
+          <label>Aircraft</label>
+          <input type="text" id="fAircraft" placeholder="e.g. SX-GJA">
+        </div>
+        <div class="form-group">
+          <label>Issued By</label>
+          <input type="text" id="fIssuedBy">
+        </div>
+        <div class="form-group">
+          <label>Part 145</label>
+          <input type="text" id="fPart145">
+        </div>
+        <div class="form-group">
+          <label>Closed Date</label>
+          <input type="date" id="fClosedDate">
+        </div>
+        <div class="form-group">
+          <label>CMP/TRXL</label>
+          <input type="text" id="fCmpTrxl">
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="fStatus">
+            <option value="OPEN">Open WO</option>
+            <option value="CLOSED">WO Completed</option>
+            <option value="CNX">Cancelled</option>
           </select>
         </div>
-        <div class="field"><label>WP Filed</label>
-          <select id="f-wp"><option value="">—</option><option value="YES">YES</option><option value="PENDING">PENDING</option></select>
+        <div class="form-group">
+          <label>PKG RCV</label>
+          <select id="fPkgRcv">
+            <option value=""></option>
+            <option value="YES">YES</option>
+            <option value="NO">NO</option>
+          </select>
         </div>
-        <div class="field"><label>CMP/TRXL Updated</label>
-          <select id="f-cmp"><option value="">—</option><option value="YES">YES</option><option value="PENDING">PENDING</option></select>
+        <div class="form-group">
+          <label>WP FILED</label>
+          <select id="fWpFiled">
+            <option value=""></option>
+            <option value="YES">YES</option>
+            <option value="NO">NO</option>
+          </select>
         </div>
-        <div class="field"><label>Closed date</label><input type="date" id="f-closed"></div>
-        <div class="field"><label>Original Package Received</label>
-          <select id="f-pkg"><option value="">—</option><option value="YES">YES</option><option value="PENDING">PENDING</option></select>
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" id="fLocation">
         </div>
-        <div class="field"><label>Form GJ/M-28</label>
-          <select id="f-form"><option value="">—</option><option value="YES">YES</option><option value="N/A">N/A</option></select>
+        <div class="form-group">
+          <label>CMP LIST</label>
+          <select id="fCmpList">
+            <option value=""></option>
+            <option value="YES">YES</option>
+            <option value="NO">NO</option>
+          </select>
         </div>
-        <div class="field form-full"><label>Description *</label><textarea id="f-desc" placeholder="Work order description…"></textarea></div>
-        <div class="field"><label>Location</label><input id="f-loc" placeholder="JAN 2025 METAL CABINET"></div>
-        <div class="field"><label>Entered by</label><input id="f-entered" placeholder="TTS"></div>
-        <div class="field form-full"><label>CMP Component List</label><input id="f-cmplist" placeholder="If applicable"></div>
-        <div class="field form-full"><label>Remarks</label><input id="f-remarks" placeholder="Optional remarks"></div>
+        <div class="form-group">
+          <label>FORM M-28</label>
+          <select id="fFormM28">
+            <option value=""></option>
+            <option value="YES">YES</option>
+            <option value="NO">NO</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Entered By</label>
+          <input type="text" id="fEnteredBy">
+        </div>
+        <div class="form-group full">
+          <label>Description</label>
+          <textarea id="fDescription" rows="3"></textarea>
+        </div>
+        <div class="form-group full">
+          <label>Remarks</label>
+          <textarea id="fRemarks" rows="2"></textarea>
+        </div>
       </div>
-      <p class="form-error" id="form-error" style="display:none"></p>
     </div>
-    <div class="modal-foot">
-      <button class="btn btn-ghost" id="btn-cancel">Cancel</button>
-      <button class="btn btn-blue" id="btn-save">Save work order</button>
+    <div class="modal-footer">
+      <button class="btn" id="modalCancel" style="background:#eee">Cancel</button>
+      <button class="btn btn-primary" id="modalSave">Save</button>
     </div>
   </div>
 </div>
@@ -158,226 +251,424 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { db }    from './js/firebase-config.js'
-import { requireAuth, setupNav, showToast } from './js/auth.js'
-import { getDisplayStatus, STATUS }         from './js/status.js'
-import {
-  collection, query, orderBy, onSnapshot,
-  addDoc, updateDoc, deleteDoc, doc, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"
+import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"
+import { getAuth, onAuthStateChanged, signOut }
+                           from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"
+import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc }
+                           from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"
 
-const COLLECTION = 'gainjet_workOrders'
-const PAGE_SIZE  = 50
-let allWOs=[], filtered=[], page=1
-let sortCol='issue_date', sortDir='desc'
-let editId=null, userRole='viewer', filterStatus=''
+const firebaseConfig = {
+  apiKey:            "AIzaSyDVWVXKhxg0nEK08D2OBOKJKyomf30-5ZE",
+  authDomain:        "worecord-e9fe8.firebaseapp.com",
+  projectId:         "worecord-e9fe8",
+  storageBucket:     "worecord-e9fe8.firebasestorage.app",
+  messagingSenderId: "443518548336",
+  appId:             "1:443518548336:web:6f9fbad37d319ae9c6b7b5"
+}
+const app  = initializeApp(firebaseConfig)
+const auth = getAuth(app)
+const db   = getFirestore(app)
 
-requireAuth((user, role, company) => {
-  if (company==='GJET' && role!=='admin') { window.location.href='home.html'; return }
-  userRole=role
-  setupNav(user, role, 'GAINJET', 'gainjet')
-  if (role!=='viewer') document.getElementById('btn-new').style.display='flex'
-  loadWOs()
-})
+const COLLECTION  = 'gainjet_workOrders'
+const DEL_COLL    = 'gainjet_deletedWOs'
+const SESSION_KEY = 'wosession'
+const SESSION_TTL = 86400000
 
-function loadWOs() {
-  const q = query(collection(db, COLLECTION), orderBy('issue_date','desc'))
-  onSnapshot(q, snap => {
-    allWOs = snap.docs.map(d => ({ id:d.id, ...d.data() }))
-    buildFilters(); applyFilters()
+// ── SESSION ──────────────────────────────────────────────────────────────────
+const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null')
+if (!s || Date.now() - s.ts > SESSION_TTL) {
+  localStorage.removeItem(SESSION_KEY)
+  location.href = 'login.html'
+}
+
+// ── GLOBALS ──────────────────────────────────────────────────────────────────
+let allWOs      = []
+let filtered    = []
+let pageSize    = 50
+let currentPage = 1
+let editingId   = null
+let userRole    = 'viewer'
+let userName    = ''
+let sortField   = 'serial_number'
+let sortDir     = -1   // -1 = desc (newest first), 1 = asc
+
+// ── STATUS ────────────────────────────────────────────────────────────────────
+const STATUS = {
+  OPEN:   { key:'OPEN',   label:'Open WO',                       dot:'#9e9e9e', bg:'#ffffff',               border:'#e0e0e0' },
+  CLOSED: { key:'CLOSED', label:'WO Completed',                  dot:'#2e7d32', bg:'rgba(76,175,80,0.25)',   border:'#4caf50' },
+  DOCS:   { key:'DOCS',   label:'WO Completed – Docs in office', dot:'#1565c0', bg:'rgba(33,150,243,0.25)', border:'#2196f3' },
+  CNX:    { key:'CNX',    label:'Cancelled',                     dot:'#c62828', bg:'rgba(244,67,54,0.22)',  border:'#f44336' },
+}
+function getStatus(wo) {
+  if (wo.status === 'CNX')                              return STATUS.CNX
+  if (wo.status === 'CLOSED' && wo.wp_filed === 'YES') return STATUS.DOCS
+  if (wo.status === 'CLOSED')                           return STATUS.CLOSED
+  return STATUS.OPEN
+}
+
+// ── TOAST ────────────────────────────────────────────────────────────────────
+function toast(msg, type='') {
+  const el = document.getElementById('toast')
+  el.textContent = msg
+  el.className = 'toast show ' + type
+  setTimeout(() => el.className = 'toast', 2800)
+}
+
+// ── DATE FORMAT ───────────────────────────────────────────────────────────────
+// Handles: Firestore Timestamp, ISO string "2025-07-31", string with time "2025-07-31 00:00:00"
+function fmtDate(v) {
+  if (!v) return ''
+  // Firestore Timestamp object
+  if (v && typeof v === 'object' && v.seconds) {
+    return new Date(v.seconds * 1000).toISOString().slice(0, 10)
+  }
+  // String — take only first 10 chars (YYYY-MM-DD)
+  const str = String(v).trim()
+  if (!str || str === 'NaN' || str === 'null' || str === 'undefined') return ''
+  return str.slice(0, 10)
+}
+
+// Date value for year extraction
+function getYear(v) {
+  const d = fmtDate(v)
+  return d ? d.slice(0, 4) : ''
+}
+
+// ── WO NUMBER GENERATOR ───────────────────────────────────────────────────────
+function generateWONumber() {
+  const now    = new Date()
+  const yy     = String(now.getFullYear()).slice(2)
+  const mm     = String(now.getMonth() + 1).padStart(2, '0')
+  const prefix = `GJ${yy}${mm}`
+  let maxSeq   = 0
+  allWOs.forEach(w => {
+    if (w.wo_number && w.wo_number.startsWith('GJ') && w.wo_number.length >= 9) {
+      const seq = parseInt(w.wo_number.slice(6)) || 0
+      if (seq > maxSeq) maxSeq = seq
+    }
+  })
+  return prefix + String(maxSeq + 1).padStart(3, '0')
+}
+
+// ── SERIAL NUMBER GENERATOR ───────────────────────────────────────────────────
+function generateSerialNumber() {
+  let max = 0
+  allWOs.forEach(w => {
+    const n = parseInt(w.serial_number) || 0
+    if (n > max) max = n
+  })
+  return max + 1
+}
+
+// ── SORT ──────────────────────────────────────────────────────────────────────
+window.sortBy = function(field) {
+  if (sortField === field) {
+    sortDir = -sortDir
+  } else {
+    sortField = field
+    sortDir   = field === 'serial_number' ? -1 : 1
+  }
+  applyFilters()
+}
+
+function sortRecords(arr) {
+  return [...arr].sort((a, b) => {
+    let va = a[sortField]
+    let vb = b[sortField]
+
+    if (sortField === 'serial_number') {
+      va = parseInt(va) || 0
+      vb = parseInt(vb) || 0
+      return (va - vb) * sortDir
+    }
+
+    if (sortField === 'issue_date') {
+      va = fmtDate(va) || ''
+      vb = fmtDate(vb) || ''
+    } else {
+      va = String(va || '').toLowerCase()
+      vb = String(vb || '').toLowerCase()
+    }
+    if (va < vb) return -1 * sortDir
+    if (va > vb) return  1 * sortDir
+    return 0
   })
 }
 
+// ── LOAD DATA ─────────────────────────────────────────────────────────────────
+async function loadWOs() {
+  try {
+    const snap = await getDocs(collection(db, COLLECTION))
+    allWOs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    buildFilters()
+    applyFilters()
+  } catch(e) {
+    document.getElementById('woBody').innerHTML =
+      `<tr><td colspan="19" class="empty">Error loading data: ${e.message}</td></tr>`
+  }
+}
+
+// ── FILTER DROPDOWNS ──────────────────────────────────────────────────────────
 function buildFilters() {
-  const aircraft = [...new Set(allWOs.map(w=>w.aircraft).filter(Boolean))].sort()
-  const years    = [...new Set(allWOs.map(w=>w.year).filter(Boolean))].sort((a,b)=>b-a)
-  const curA=document.getElementById('filter-aircraft').value
-  const curY=document.getElementById('filter-year').value
-  document.getElementById('filter-aircraft').innerHTML='<option value="">All aircraft</option>'+aircraft.map(a=>`<option${a===curA?' selected':''}>${a}</option>`).join('')
-  document.getElementById('filter-year').innerHTML='<option value="">All years</option>'+years.map(y=>`<option${String(y)===curY?' selected':''}>${y}</option>`).join('')
+  const aircraft = [...new Set(allWOs.map(w => w.aircraft).filter(Boolean))].sort()
+  const years    = [...new Set(allWOs.map(w => getYear(w.issue_date)).filter(Boolean))].sort().reverse()
+  const aEl = document.getElementById('aircraftFilter')
+  const yEl = document.getElementById('yearFilter')
+  const aVal = aEl.value, yVal = yEl.value
+  aEl.innerHTML = '<option value="">All Aircraft</option>' +
+    aircraft.map(a => `<option value="${a}">${a}</option>`).join('')
+  yEl.innerHTML = '<option value="">All Years</option>' +
+    years.map(y => `<option value="${y}">${y}</option>`).join('')
+  aEl.value = aVal; yEl.value = yVal
 }
 
+// ── APPLY FILTERS ─────────────────────────────────────────────────────────────
 function applyFilters() {
-  const q=document.getElementById('search').value.toLowerCase()
-  const fa=document.getElementById('filter-aircraft').value
-  const fy=document.getElementById('filter-year').value
-  const fs=document.getElementById('filter-status').value
-  filtered=allWOs.filter(w=>{
-    const ds=getDisplayStatus(w)
-    const matchQ=!q||[w.wo_number,w.aircraft,w.description,w.entered_by,w.remarks,w.part_145,w.location].some(v=>(v||'').toLowerCase().includes(q))
-    const matchS=!fs||ds.key===fs
-    const matchA=!fa||w.aircraft===fa
-    const matchY=!fy||String(w.year)===fy
-    return matchQ&&matchS&&matchA&&matchY
-  }).sort((a,b)=>{
-    const va=a[sortCol]||'',vb=b[sortCol]||''
-    return sortDir==='asc'?va.localeCompare(vb):vb.localeCompare(va)
+  const search   = document.getElementById('searchInput').value.toLowerCase()
+  const status   = document.getElementById('statusFilter').value
+  const aircraft = document.getElementById('aircraftFilter').value
+  const year     = document.getElementById('yearFilter').value
+
+  let result = allWOs.filter(wo => {
+    const st = getStatus(wo)
+    const matchStatus   = !status   || st.key === status
+    const matchAircraft = !aircraft || wo.aircraft === aircraft
+    const matchYear     = !year     || getYear(wo.issue_date) === year
+    const matchSearch   = !search   ||
+      [wo.wo_number, wo.aircraft, wo.description, wo.issued_by,
+       wo.remarks, wo.location, wo.part_145, String(wo.serial_number||'')]
+      .join(' ').toLowerCase().includes(search)
+    return matchStatus && matchAircraft && matchYear && matchSearch
   })
-  updateCounts(); page=1; renderTable()
+
+  filtered    = sortRecords(result)
+  currentPage = 1
+  renderStats()
+  renderTable()
+  renderPagination()
 }
 
-function updateCounts() {
-  const c={OPEN:0,CLOSED:0,DOCS:0,CNX:0}
-  allWOs.forEach(w=>c[getDisplayStatus(w).key]++)
-  Object.entries(c).forEach(([k,v])=>{const el=document.getElementById('count-'+k);if(el)el.textContent=v})
+// ── STATS ─────────────────────────────────────────────────────────────────────
+function renderStats() {
+  const counts = { OPEN:0, CLOSED:0, DOCS:0, CNX:0 }
+  filtered.forEach(w => counts[getStatus(w).key]++)
+  document.getElementById('statsBar').innerHTML = `
+    <div class="stat-card"><div class="num">${filtered.length}</div><div class="lbl">Total (filtered)</div></div>
+    <div class="stat-card"><div class="num">${counts.OPEN}</div><div class="lbl">Open</div></div>
+    <div class="stat-card green"><div class="num">${counts.CLOSED}</div><div class="lbl">Completed</div></div>
+    <div class="stat-card blue"><div class="num">${counts.DOCS}</div><div class="lbl">Docs in Office</div></div>
+    <div class="stat-card red"><div class="num">${counts.CNX}</div><div class="lbl">Cancelled</div></div>
+  `
 }
 
-function yesNo(val) {
-  if (val==='YES') return '<span style="color:#2e7d32;font-weight:500">YES</span>'
-  if (val==='PENDING') return '<span style="color:#e65100;font-weight:500">PND</span>'
-  return '<span style="color:#ccc">—</span>'
-}
-
+// ── TABLE ─────────────────────────────────────────────────────────────────────
 function renderTable() {
-  const start=(page-1)*PAGE_SIZE, slice=filtered.slice(start,start+PAGE_SIZE)
-  const pages=Math.ceil(filtered.length/PAGE_SIZE)||1
-  document.getElementById('record-count').textContent=`${filtered.length} of ${allWOs.length}`
-  document.getElementById('page-info').textContent=`Page ${page} of ${pages}`
-  document.getElementById('btn-prev').disabled=page<=1
-  document.getElementById('btn-next').disabled=page>=pages
-  const canEdit=userRole==='admin'||userRole==='editor'
-  const canDelete=userRole==='admin'
+  const start    = (currentPage - 1) * pageSize
+  const page     = filtered.slice(start, start + pageSize)
+  const body     = document.getElementById('woBody')
+  const canEdit  = userRole === 'admin' || userRole === 'editor'
+  const canDel   = userRole === 'admin' || userRole === 'editor'
 
-  if(!slice.length){document.getElementById('tbody').innerHTML=`<tr><td colspan="18" class="empty-state">No work orders found</td></tr>`;return}
+  if (!page.length) {
+    body.innerHTML = `<tr><td colspan="19" class="empty">No work orders found.</td></tr>`
+    return
+  }
 
-  document.getElementById('tbody').innerHTML=slice.map((wo,i)=>{
-    const ds=getDisplayStatus(wo)
-    return `<tr style="background:${ds.rowBg};border-bottom:1.5px solid ${ds.rowBorder};cursor:${canEdit?'pointer':'default'}"
-      ondblclick="${canEdit?`openEdit('${wo.id}')`:''}" >
-      <td style="color:#888;font-size:11px;text-align:center">${start+i+1}</td>
-      <td><span style="font-family:JetBrains Mono,monospace;font-size:12px;color:#1a73e8;white-space:nowrap">${wo.wo_number||''}</span></td>
-      <td style="white-space:nowrap;font-size:12px">${wo.issue_date||''}</td>
-      <td style="font-size:12px;color:#777;white-space:nowrap">${wo.due_limit||''}</td>
-      <td style="font-weight:600">${wo.aircraft||''}</td>
-      <td style="font-size:12px;color:#555">${wo.issued_by||''}</td>
-      <td style="font-size:12px;color:#555">${wo.part_145||''}</td>
-      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(wo.description||'').replace(/"/g,'&quot;')}">${wo.description||''}</td>
-      <td style="white-space:nowrap;font-size:12px">${wo.closed_date||''}</td>
-      <td style="text-align:center">${yesNo(wo.cmp_updated)}</td>
-      <td>
-        <div style="display:flex;align-items:center;gap:5px">
-          <div style="width:9px;height:9px;border-radius:50%;background:${ds.dot};flex-shrink:0"></div>
-          <span style="font-size:11px;font-weight:500;color:#333">${ds.label}</span>
-        </div>
+  body.innerHTML = page.map(wo => {
+    const st = getStatus(wo)
+    const aa = wo.serial_number != null ? String(wo.serial_number).padStart(3, '0') : '---'
+    return `<tr style="background:${st.bg};border-left:4px solid ${st.border}">
+      <td><b>${aa}</b></td>
+      <td>${wo.wo_number || ''}</td>
+      <td>${fmtDate(wo.issue_date)}</td>
+      <td>${wo.due_limit || ''}</td>
+      <td>${wo.aircraft || ''}</td>
+      <td>${wo.issued_by || ''}</td>
+      <td>${wo.part_145 || ''}</td>
+      <td class="wrap">${wo.description || ''}</td>
+      <td>${fmtDate(wo.closed_date)}</td>
+      <td>${wo.cmp_trxl || ''}</td>
+      <td><span class="dot" style="background:${st.dot}"></span>${st.label}</td>
+      <td>${wo.pkg_rcv || ''}</td>
+      <td>${wo.wp_filed || ''}</td>
+      <td>${wo.location || ''}</td>
+      <td>${wo.cmp_list || ''}</td>
+      <td>${wo.form_m28 || ''}</td>
+      <td>${wo.entered_by || ''}</td>
+      <td class="wrap">${wo.remarks || ''}</td>
+      <td style="white-space:nowrap">
+        ${canEdit ? `<button class="btn btn-sm btn-primary" data-edit="${wo.id}">Edit</button> ` : ''}
+        ${canDel  ? `<button class="btn btn-sm btn-danger"  data-del="${wo.id}">Del</button>` : ''}
       </td>
-      <td style="text-align:center">${yesNo(wo.package_received)}</td>
-      <td style="text-align:center">${yesNo(wo.wp_filed)}</td>
-      <td style="font-size:11px;color:#555;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${wo.location||''}</td>
-      <td style="text-align:center">${yesNo(wo.cmp_component_list)}</td>
-      <td style="text-align:center;font-size:12px">${wo.form_completed||'—'}</td>
-      <td style="font-size:12px;color:#555">${wo.entered_by||''}</td>
-      <td style="font-size:11px;color:#777;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(wo.remarks||'').replace(/"/g,'&quot;')}">${wo.remarks||''}</td>
     </tr>`
   }).join('')
-}
 
-document.getElementById('search').addEventListener('input',applyFilters)
-document.getElementById('filter-aircraft').addEventListener('change',applyFilters)
-document.getElementById('filter-year').addEventListener('change',applyFilters)
-document.getElementById('filter-status').addEventListener('change',applyFilters)
-document.querySelectorAll('thead th[data-col]').forEach(th=>{
-  th.addEventListener('click',()=>{
-    sortDir=sortCol===th.dataset.col?(sortDir==='asc'?'desc':'asc'):'asc'
-    sortCol=th.dataset.col; applyFilters()
+  // Attach events via data attributes (avoids module scope issues)
+  body.querySelectorAll('[data-edit]').forEach(btn => {
+    btn.addEventListener('click', () => openEdit(btn.dataset.edit))
   })
-})
-document.getElementById('btn-prev').addEventListener('click',()=>{page--;renderTable()})
-document.getElementById('btn-next').addEventListener('click',()=>{page++;renderTable()})
-
-function generateWONumber() {
-  const now=new Date()
-  const yy=String(now.getFullYear()).slice(2)
-  const mm=String(now.getMonth()+1).padStart(2,'0')
-  const dd=String(now.getDate()).padStart(2,'0')
-  const aa=String(allWOs.filter(w=>w.wo_number&&w.wo_number.startsWith(`GJ${yy}${mm}`)).length+1).padStart(3,'0')
-  return `GJ${yy}${mm}${dd}${aa}`
+  body.querySelectorAll('[data-del]').forEach(btn => {
+    btn.addEventListener('click', () => archiveWO(btn.dataset.del))
+  })
 }
 
-function openModal(title){
-  document.getElementById('modal-title').textContent=title
-  document.getElementById('form-error').style.display='none'
-  document.getElementById('modal').classList.add('open')
-}
-function closeModal(){document.getElementById('modal').classList.remove('open');editId=null}
-document.getElementById('modal-close').addEventListener('click',closeModal)
-document.getElementById('btn-cancel').addEventListener('click',closeModal)
-document.getElementById('modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal()})
+// ── PAGINATION ────────────────────────────────────────────────────────────────
+function renderPagination() {
+  const total = Math.ceil(filtered.length / pageSize)
+  const bar   = document.getElementById('paginationBar')
+  const sizeSel = `<select id="pageSizeSel">
+    ${[25,50,100,200].map(n=>`<option value="${n}"${n===pageSize?' selected':''}>${n}/page</option>`).join('')}
+  </select>`
 
-document.getElementById('btn-new').addEventListener('click',()=>{
-  editId=null
-  const now=new Date()
-  document.getElementById('f-wo').value=generateWONumber()
-  document.getElementById('f-date').value=now.toISOString().slice(0,10)
-  ;['f-aircraft','f-issued','f-part145','f-due','f-closed','f-desc','f-loc','f-entered','f-cmplist','f-remarks'].forEach(id=>document.getElementById(id).value='')
-  ;['f-status'].forEach(id=>document.getElementById(id).value='OPEN')
-  ;['f-wp','f-cmp','f-pkg','f-form'].forEach(id=>document.getElementById(id).value='')
-  openModal('New work order')
-})
-
-window.openEdit=(id)=>{
-  const wo=allWOs.find(w=>w.id===id);if(!wo)return
-  editId=id
-  document.getElementById('f-wo').value=wo.wo_number||''
-  document.getElementById('f-date').value=wo.issue_date||''
-  document.getElementById('f-aircraft').value=wo.aircraft||''
-  document.getElementById('f-issued').value=wo.issued_by||''
-  document.getElementById('f-part145').value=wo.part_145||''
-  document.getElementById('f-due').value=wo.due_limit||''
-  document.getElementById('f-status').value=wo.status||'OPEN'
-  document.getElementById('f-wp').value=wo.wp_filed||''
-  document.getElementById('f-cmp').value=wo.cmp_updated||''
-  document.getElementById('f-closed').value=wo.closed_date||''
-  document.getElementById('f-pkg').value=wo.package_received||''
-  document.getElementById('f-form').value=wo.form_completed||''
-  document.getElementById('f-desc').value=wo.description||''
-  document.getElementById('f-loc').value=wo.location||''
-  document.getElementById('f-entered').value=wo.entered_by||''
-  document.getElementById('f-cmplist').value=wo.cmp_component_list||''
-  document.getElementById('f-remarks').value=wo.remarks||''
-  openModal('Edit work order')
-}
-
-document.getElementById('btn-save').addEventListener('click',async()=>{
-  const aircraft=document.getElementById('f-aircraft').value.trim()
-  const desc=document.getElementById('f-desc').value.trim()
-  const errEl=document.getElementById('form-error')
-  if(!aircraft||!desc){errEl.textContent='Aircraft and description are required.';errEl.style.display='block';return}
-  errEl.style.display='none'
-  const btn=document.getElementById('btn-save');btn.disabled=true;btn.textContent='Saving…'
-  const woNum=document.getElementById('f-wo').value
-  const issueDate=document.getElementById('f-date').value
-  const payload={
-    wo_number:woNum, issue_date:issueDate,
-    aircraft, issued_by:document.getElementById('f-issued').value,
-    part_145:document.getElementById('f-part145').value,
-    due_limit:document.getElementById('f-due').value,
-    status:document.getElementById('f-status').value,
-    wp_filed:document.getElementById('f-wp').value,
-    cmp_updated:document.getElementById('f-cmp').value,
-    closed_date:document.getElementById('f-closed').value,
-    package_received:document.getElementById('f-pkg').value,
-    form_completed:document.getElementById('f-form').value,
-    description:desc,
-    location:document.getElementById('f-loc').value,
-    entered_by:document.getElementById('f-entered').value,
-    cmp_component_list:document.getElementById('f-cmplist').value,
-    remarks:document.getElementById('f-remarks').value,
-    year:issueDate?parseInt(issueDate.slice(0,4)):new Date().getFullYear(),
-    updated_at:serverTimestamp()
+  if (total <= 1) {
+    bar.innerHTML = sizeSel + `<span class="page-info">${filtered.length} records</span>`
+  } else {
+    let btns = `<button id="prevBtn" ${currentPage===1?'disabled':''}>‹ Prev</button>`
+    for (let p = Math.max(1,currentPage-3); p <= Math.min(total,currentPage+3); p++) {
+      btns += `<button class="pg-btn${p===currentPage?' active':''}" data-page="${p}">${p}</button>`
+    }
+    btns += `<button id="nextBtn" ${currentPage===total?'disabled':''}>Next ›</button>`
+    bar.innerHTML = sizeSel + btns + `<span class="page-info">${filtered.length} records | Page ${currentPage}/${total}</span>`
   }
-  try{
-    if(editId){await updateDoc(doc(db,COLLECTION,editId),payload);showToast('Work order updated','success')}
-    else{await addDoc(collection(db,COLLECTION),{...payload,created_at:serverTimestamp()});showToast('Work order created','success')}
-    closeModal()
-  }catch(err){errEl.textContent='Error: '+err.message;errEl.style.display='block'}
-  finally{btn.disabled=false;btn.textContent='Save work order'}
+
+  bar.querySelector('#pageSizeSel')?.addEventListener('change', e => {
+    pageSize = parseInt(e.target.value); currentPage = 1; renderTable(); renderPagination()
+  })
+  bar.querySelector('#prevBtn')?.addEventListener('click', () => { currentPage--; renderTable(); renderPagination() })
+  bar.querySelector('#nextBtn')?.addEventListener('click', () => { currentPage++; renderTable(); renderPagination() })
+  bar.querySelectorAll('.pg-btn').forEach(btn => {
+    btn.addEventListener('click', () => { currentPage = parseInt(btn.dataset.page); renderTable(); renderPagination() })
+  })
+}
+
+// ── MODAL OPEN ────────────────────────────────────────────────────────────────
+function openModal(wo = null) {
+  editingId = wo ? wo.id : null
+  document.getElementById('modalTitle').textContent = wo ? 'Edit Work Order' : 'New Work Order'
+  document.getElementById('fWoNum').value       = wo ? (wo.wo_number   || '') : generateWONumber()
+  document.getElementById('fAA').value          = wo ? (wo.serial_number != null ? String(wo.serial_number).padStart(3,'0') : '') : String(generateSerialNumber()).padStart(3,'0')
+  document.getElementById('fIssueDate').value   = wo ? fmtDate(wo.issue_date)  : new Date().toISOString().slice(0,10)
+  document.getElementById('fDueLimit').value    = wo ? (wo.due_limit   || '') : ''
+  document.getElementById('fAircraft').value    = wo ? (wo.aircraft    || '') : ''
+  document.getElementById('fIssuedBy').value    = wo ? (wo.issued_by   || '') : ''
+  document.getElementById('fPart145').value     = wo ? (wo.part_145    || '') : ''
+  document.getElementById('fDescription').value = wo ? (wo.description || '') : ''
+  document.getElementById('fClosedDate').value  = wo ? fmtDate(wo.closed_date) : ''
+  document.getElementById('fCmpTrxl').value     = wo ? (wo.cmp_trxl   || '') : ''
+  document.getElementById('fStatus').value      = wo ? (wo.status      || 'OPEN') : 'OPEN'
+  document.getElementById('fPkgRcv').value      = wo ? (wo.pkg_rcv    || '') : ''
+  document.getElementById('fWpFiled').value     = wo ? (wo.wp_filed   || '') : ''
+  document.getElementById('fLocation').value    = wo ? (wo.location   || '') : ''
+  document.getElementById('fCmpList').value     = wo ? (wo.cmp_list   || '') : ''
+  document.getElementById('fFormM28').value     = wo ? (wo.form_m28   || '') : ''
+  document.getElementById('fEnteredBy').value   = wo ? (wo.entered_by || '') : userName
+  document.getElementById('fRemarks').value     = wo ? (wo.remarks    || '') : ''
+  document.getElementById('modalOverlay').classList.add('open')
+}
+
+function openEdit(id) {
+  const wo = allWOs.find(w => w.id === id)
+  if (wo) openModal(wo)
+}
+
+// ── ARCHIVE (soft-delete) ─────────────────────────────────────────────────────
+async function archiveWO(id) {
+  if (!confirm('Move this WO to archive (deleted)?')) return
+  const wo = allWOs.find(w => w.id === id)
+  if (!wo) return
+  try {
+    await addDoc(collection(db, DEL_COLL), { ...wo, deletedAt: serverTimestamp(), deletedBy: userName })
+    await deleteDoc(doc(db, COLLECTION, id))
+    toast('WO archived', 'success')
+    await loadWOs()
+  } catch(e) { toast('Error: ' + e.message, 'error') }
+}
+
+// ── SAVE ──────────────────────────────────────────────────────────────────────
+document.getElementById('modalSave').addEventListener('click', async () => {
+  const woNum = document.getElementById('fWoNum').value.trim()
+  if (!woNum) { toast('WO Number required', 'error'); return }
+
+  const aaVal    = document.getElementById('fAA').value.trim()
+  const serialNum = parseInt(aaVal) || generateSerialNumber()
+
+  const payload = {
+    wo_number:     woNum,
+    serial_number: serialNum,
+    issue_date:    document.getElementById('fIssueDate').value   || null,
+    due_limit:     document.getElementById('fDueLimit').value    || '',
+    aircraft:      document.getElementById('fAircraft').value    || '',
+    issued_by:     document.getElementById('fIssuedBy').value    || '',
+    part_145:      document.getElementById('fPart145').value     || '',
+    description:   document.getElementById('fDescription').value || '',
+    closed_date:   document.getElementById('fClosedDate').value  || null,
+    cmp_trxl:      document.getElementById('fCmpTrxl').value     || '',
+    status:        document.getElementById('fStatus').value,
+    pkg_rcv:       document.getElementById('fPkgRcv').value      || '',
+    wp_filed:      document.getElementById('fWpFiled').value     || '',
+    location:      document.getElementById('fLocation').value    || '',
+    cmp_list:      document.getElementById('fCmpList').value     || '',
+    form_m28:      document.getElementById('fFormM28').value     || '',
+    entered_by:    document.getElementById('fEnteredBy').value   || '',
+    remarks:       document.getElementById('fRemarks').value     || '',
+    updatedAt:     serverTimestamp(),
+  }
+
+  try {
+    if (editingId) {
+      await updateDoc(doc(db, COLLECTION, editingId), payload)
+      toast('WO updated', 'success')
+    } else {
+      payload.createdAt = serverTimestamp()
+      await addDoc(collection(db, COLLECTION), payload)
+      toast('WO created', 'success')
+    }
+    document.getElementById('modalOverlay').classList.remove('open')
+    await loadWOs()
+  } catch(e) { toast('Error: ' + e.message, 'error') }
 })
 
-window.deleteWO=async(id,woNum)=>{
-  if(!confirm(`Delete WO ${woNum}?`))return
-  try{await deleteDoc(doc(db,COLLECTION,id));showToast('Deleted','success')}
-  catch(err){showToast('Error: '+err.message,'error')}
-}
+// ── MODAL CLOSE ───────────────────────────────────────────────────────────────
+document.getElementById('modalClose').addEventListener('click',  () => document.getElementById('modalOverlay').classList.remove('open'))
+document.getElementById('modalCancel').addEventListener('click', () => document.getElementById('modalOverlay').classList.remove('open'))
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalOverlay'))
+    document.getElementById('modalOverlay').classList.remove('open')
+})
+
+// ── FILTERS ───────────────────────────────────────────────────────────────────
+document.getElementById('searchInput').addEventListener('input', applyFilters)
+document.getElementById('statusFilter').addEventListener('change', applyFilters)
+document.getElementById('aircraftFilter').addEventListener('change', applyFilters)
+document.getElementById('yearFilter').addEventListener('change', applyFilters)
+document.getElementById('newWOBtn').addEventListener('click', () => openModal())
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  localStorage.removeItem(SESSION_KEY)
+  await signOut(auth)
+  location.href = 'login.html'
+})
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { location.href = 'login.html'; return }
+  try {
+    const uSnap = await getDoc(doc(db, 'users', user.uid))
+    if (uSnap.exists()) {
+      const ud  = uSnap.data()
+      userRole  = ud.role    || 'viewer'
+      userName  = ud.displayName || user.email
+      const company = ud.company || ''
+      if (userRole !== 'admin' && company !== 'GAINJET' && company !== 'both') {
+        location.href = 'index.html'; return
+      }
+    }
+  } catch(e) { console.warn('Could not load user profile', e) }
+  document.getElementById('userInfo').textContent = `${userName} (${userRole})`
+  if (userRole === 'admin' || userRole === 'editor') {
+    document.getElementById('newWOBtn').style.display = ''
+  }
+  await loadWOs()
+})
 </script>
 </body>
 </html>
