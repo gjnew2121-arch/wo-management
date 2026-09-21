@@ -111,7 +111,6 @@
   <table id="woTable">
     <thead>
       <tr>
-        <th onclick="sortBy('serial_number')">A/A ↕</th>
         <th onclick="sortBy('wo_number')">WO NUM ↕</th>
         <th onclick="sortBy('issue_date')">ISSUE DATE ↕</th>
         <th>DUE LIMIT</th>
@@ -132,7 +131,7 @@
         <th>ACTIONS</th>
       </tr>
     </thead>
-    <tbody id="woBody"><tr><td colspan="19" class="loading">Loading…</td></tr></tbody>
+    <tbody id="woBody"><tr><td colspan="18" class="loading">Loading…</td></tr></tbody>
   </table>
 </div>
 
@@ -150,10 +149,6 @@
         <div class="form-group">
           <label>WO Number (auto)</label>
           <input type="text" id="fWoNum" readonly style="background:#f5f5f5">
-        </div>
-        <div class="form-group">
-          <label>A/A (auto)</label>
-          <input type="text" id="fAA" readonly style="background:#f5f5f5">
         </div>
         <div class="form-group">
           <label>Issue Date</label>
@@ -407,7 +402,7 @@ async function loadWOs() {
     applyFilters()
   } catch(e) {
     document.getElementById('woBody').innerHTML =
-      `<tr><td colspan="19" class="empty">Error loading data: ${e.message}</td></tr>`
+      `<tr><td colspan="18" class="empty">Error loading data: ${e.message}</td></tr>`
   }
 }
 
@@ -473,15 +468,13 @@ function renderTable() {
   const canDel   = userRole === 'admin' || userRole === 'editor'
 
   if (!page.length) {
-    body.innerHTML = `<tr><td colspan="19" class="empty">No work orders found.</td></tr>`
+    body.innerHTML = `<tr><td colspan="18" class="empty">No work orders found.</td></tr>`
     return
   }
 
   body.innerHTML = page.map(wo => {
     const st = getStatus(wo)
-    const aa = wo.serial_number != null ? String(wo.serial_number).padStart(3, '0') : '---'
     return `<tr style="background:${st.bg};border-left:4px solid ${st.border}">
-      <td><b>${aa}</b></td>
       <td>${wo.wo_number || ''}</td>
       <td>${fmtDate(wo.issue_date)}</td>
       <td>${fmtDate(wo.due_limit) || wo.due_limit || ''}</td>
@@ -549,7 +542,6 @@ function openModal(wo = null) {
   editingId = wo ? wo.id : null
   document.getElementById('modalTitle').textContent = wo ? 'Edit Work Order' : 'New Work Order'
   document.getElementById('fWoNum').value       = wo ? (wo.wo_number   || '') : generateWONumber()
-  document.getElementById('fAA').value          = wo ? (wo.serial_number != null ? String(wo.serial_number).padStart(3,'0') : '') : String(generateSerialNumber()).padStart(3,'0')
   document.getElementById('fIssueDate').value   = wo ? fmtDate(wo.issue_date)  : new Date().toISOString().slice(0,10)
   document.getElementById('fDueLimit').value    = wo ? (wo.due_limit   || '') : ''
   document.getElementById('fAircraft').value    = wo ? (wo.aircraft    || '') : ''
@@ -592,8 +584,7 @@ document.getElementById('modalSave').addEventListener('click', async () => {
   const woNum = document.getElementById('fWoNum').value.trim()
   if (!woNum) { toast('WO Number required', 'error'); return }
 
-  const aaVal    = document.getElementById('fAA').value.trim()
-  const serialNum = parseInt(aaVal) || generateSerialNumber()
+  const serialNum = generateSerialNumber()
 
   const payload = {
     wo_number:     woNum,
