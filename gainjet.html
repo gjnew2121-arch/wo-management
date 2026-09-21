@@ -45,8 +45,7 @@
   thead th:hover { background: #0d47a1; }
   tbody tr { border-bottom: 1px solid #e0e0e0; }
   tbody tr:hover { filter: brightness(.96); }
-  tbody td:first-child { position: sticky; left: 0; background: #fff; z-index: 1; font-weight: 600; border-right: 2px solid #c5cae9; }
-  tbody tr:hover td:first-child { background: #f0f4ff; }
+  tbody td:first-child { position: sticky; left: 0; z-index: 1; font-weight: 600; border-right: 2px solid #c5cae9; }
   td { padding: 6px 6px; vertical-align: middle; white-space: nowrap; }
   td.wrap { white-space: normal; min-width: 180px; max-width: 260px; word-break: break-word; }
 
@@ -287,7 +286,7 @@ let currentPage = 1
 let editingId   = null
 let userRole    = 'viewer'
 let userName    = ''
-let sortField   = 'serial_number'
+let sortField   = 'wo_number'
 let sortDir     = -1   // -1 = desc (newest first), 1 = asc
 
 // ── STATUS ────────────────────────────────────────────────────────────────────
@@ -339,13 +338,16 @@ function generateWONumber() {
   const now    = new Date()
   const yy     = String(now.getFullYear()).slice(2)
   const mm     = String(now.getMonth() + 1).padStart(2, '0')
-  const prefix = `GJ${yy}${mm}`
-  let maxSeq   = 0
+  const prefix = `GJ${yy}${mm}`   // e.g. "GJ2610"
+  // Find max seq across ALL months of current year (global sequence, never resets)
+  // Only look at properly formatted WOs: GJ + YY(2) + MM(2) + seq(4) = 10 chars
+  // AND only for the current year (GJ26...)
+  const yearPrefix = `GJ${yy}`
+  let maxSeq = 0
   allWOs.forEach(w => {
     if (!w.wo_number) return
     const wo = String(w.wo_number).trim()
-    // Count WO numbers with exactly 10 chars: GJ(2) + YY(2) + MM(2) + seq(4)
-    if (wo.startsWith('GJ') && wo.length === 10) {
+    if (wo.startsWith(yearPrefix) && wo.length === 10) {
       const seq = parseInt(wo.slice(6)) || 0
       if (seq > maxSeq) maxSeq = seq
     }
@@ -369,7 +371,7 @@ window.sortBy = function(field) {
     sortDir = -sortDir
   } else {
     sortField = field
-    sortDir   = field === 'serial_number' ? -1 : 1
+    sortDir   = (field === 'serial_number' || field === 'wo_number') ? -1 : 1
   }
   applyFilters()
 }
@@ -383,6 +385,18 @@ function sortRecords(arr) {
       va = parseInt(va) || 0
       vb = parseInt(vb) || 0
       return (va - vb) * sortDir
+    }
+
+    if (sortField === 'wo_number') {
+      // Extract numeric part after GJ+YYMM for proper numeric sort
+      // Valid format: GJYYMMxxxx (10 chars) → use last 4 digits
+      // Invalid/old format → sort alphabetically at the end
+      const getWOSeq = s => {
+        const str = String(s || '')
+        if (str.startsWith('GJ') && str.length === 10) return parseInt(str.slice(6)) || 0
+        return -1  // push invalid formats to bottom
+      }
+      return (getWOSeq(va) - getWOSeq(vb)) * sortDir
     }
 
     if (sortField === 'issue_date') {
