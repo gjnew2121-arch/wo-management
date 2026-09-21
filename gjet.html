@@ -383,12 +383,17 @@ function sortRecords(arr) {
     }
 
     if (sortField === 'wo_number') {
-      const getWOSeq = s => {
-        const str = String(s || '')
-        if (str.startsWith('GJ') && str.length === 10) return parseInt(str.slice(6)) || 0
+      const getWOParts = s => {
+        const str = String(s || '').trim()
+        if (str.startsWith('GJ') && str.length === 10) {
+          const yy  = parseInt(str.slice(2, 4))
+          const mm  = parseInt(str.slice(4, 6))
+          const seq = parseInt(str.slice(6))
+          return yy * 10000000 + mm * 100000 + seq
+        }
         return -1
       }
-      return (getWOSeq(va) - getWOSeq(vb)) * sortDir
+      return (getWOParts(va) - getWOParts(vb)) * sortDir
     }
 
     if (sortField === 'issue_date') {
