@@ -342,8 +342,11 @@ function generateWONumber() {
   const prefix = `GJ${yy}${mm}`
   let maxSeq   = 0
   allWOs.forEach(w => {
-    if (w.wo_number && w.wo_number.startsWith('GJ') && w.wo_number.length >= 9) {
-      const seq = parseInt(w.wo_number.slice(6)) || 0
+    if (!w.wo_number) return
+    const wo = String(w.wo_number).trim()
+    // Only count WO numbers with exactly 9 chars: GJ + YYMM (4) + seq (3)
+    if (wo.startsWith('GJ') && wo.length === 9) {
+      const seq = parseInt(wo.slice(6)) || 0
       if (seq > maxSeq) maxSeq = seq
     }
   })
