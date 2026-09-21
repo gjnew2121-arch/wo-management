@@ -41,9 +41,12 @@
   .table-wrap { overflow-x: auto; max-height: calc(100vh - 210px); }
   table { width: 100%; border-collapse: collapse; font-size: .82rem; min-width: 1400px; }
   thead th { background: #e65100; color: #fff; padding: 8px 6px; position: sticky; top: 0; z-index: 2; white-space: nowrap; text-align: left; cursor: pointer; user-select: none; }
+  thead th:first-child { position: sticky; top: 0; left: 0; z-index: 3; }
   thead th:hover { background: #bf360c; }
   tbody tr { border-bottom: 1px solid #e0e0e0; }
   tbody tr:hover { filter: brightness(.96); }
+  tbody td:first-child { position: sticky; left: 0; background: #fff; z-index: 1; font-weight: 600; border-right: 2px solid #ffe0b2; }
+  tbody tr:hover td:first-child { background: #fff3e0; }
   td { padding: 6px 6px; vertical-align: middle; white-space: nowrap; }
   td.wrap { white-space: normal; min-width: 180px; max-width: 260px; word-break: break-word; }
 
@@ -339,13 +342,13 @@ function generateWONumber() {
   allWOs.forEach(w => {
     if (!w.wo_number) return
     const wo = String(w.wo_number).trim()
-    // Only count WO numbers with exactly 9 chars: GJ + YYMM (4) + seq (3)
-    if (wo.startsWith('GJ') && wo.length === 9) {
+    // Count WO numbers with exactly 10 chars: GJ(2) + YY(2) + MM(2) + seq(4)
+    if (wo.startsWith('GJ') && wo.length === 10) {
       const seq = parseInt(wo.slice(6)) || 0
       if (seq > maxSeq) maxSeq = seq
     }
   })
-  return prefix + String(maxSeq + 1).padStart(3, '0')
+  return prefix + String(maxSeq + 1).padStart(4, '0')
 }
 
 // ── SERIAL NUMBER GENERATOR ───────────────────────────────────────────────────
