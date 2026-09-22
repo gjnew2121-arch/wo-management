@@ -251,7 +251,7 @@
 import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"
 import { getAuth, onAuthStateChanged, signOut }
                            from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"
-import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc }
+import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc, runTransaction, increment, query, orderBy, limit, startAfter }
                            from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"
 
 const firebaseConfig = {
@@ -279,15 +279,18 @@ if (!_st || (Date.now() - parseInt(_st)) > SESSION_TTL) {
 }
 
 // ── GLOBALS ──────────────────────────────────────────────────────────────────
-let allWOs      = []
-let filtered    = []
-let pageSize    = 50
-let currentPage = 1
-let editingId   = null
-let userRole    = 'viewer'
-let userName    = ''
-let sortField   = 'wo_number'
-let sortDir     = -1   // -1 = desc (newest first), 1 = asc
+let allWOs        = []
+let filtered      = []
+let pageSize      = 50
+let currentPage   = 1
+let editingId     = null
+let userRole      = 'viewer'
+let userName      = ''
+let sortField     = 'wo_number'
+let sortDir       = -1   // -1 = desc (newest first), 1 = asc
+let lastDocSnap   = null  // for "Load More" pagination cursor
+let allLoaded     = false // true when all records fetched from Firestore
+const PAGE_LIMIT  = 200   // records per Firestore fetch
 
 // ── STATUS ────────────────────────────────────────────────────────────────────
 const STATUS = {
@@ -331,8 +334,27 @@ function getYear(v) {
   return d ? d.slice(0, 4) : ''
 }
 
-// ── WO NUMBER GENERATOR ───────────────────────────────────────────────────────
-function generateWONumber() {
+// ── WO NUMBER GENERATOR (atomic — Firestore Transaction) ─────────────────────
+// Called ONLY on Save — never on modal open. 1 read + 1 write per new WO.
+async function reserveWONumber() {
+  const now    = new Date()
+  const yy     = String(now.getFullYear()).slice(2)
+  const mm     = String(now.getMonth() + 1).padStart(2, '0')
+  const prefix = `GJ${yy}${mm}`
+  const counterRef = doc(db, 'counters', 'gjet_wo_seq')
+
+  const newSeq = await runTransaction(db, async tx => {
+    const snap = await tx.get(counterRef)
+    const current = snap.exists() ? (snap.data().seq || 0) : 0
+    const next = current + 1
+    tx.set(counterRef, { seq: next }, { merge: true })
+    return next
+  })
+  return prefix + String(newSeq).padStart(4, '0')
+}
+
+// Fallback local (for modal preview only)
+function generateWONumberLocal() {
   const now    = new Date()
   const yy     = String(now.getFullYear()).slice(2)
   const mm     = String(now.getMonth() + 1).padStart(2, '0')
@@ -341,7 +363,6 @@ function generateWONumber() {
   allWOs.forEach(w => {
     if (!w.wo_number) return
     const wo = String(w.wo_number).trim()
-    // Global sequence for current year — continues across months
     if (wo.startsWith(`GJ${yy}`) && wo.length === 10) {
       const seq = parseInt(wo.slice(6)) || 0
       if (seq > maxSeq) maxSeq = seq
@@ -412,15 +433,53 @@ function sortRecords(arr) {
 // ── LOAD DATA ─────────────────────────────────────────────────────────────────
 async function loadWOs() {
   try {
-    const snap = await getDocs(collection(db, COLLECTION))
-    allWOs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    const q    = query(collection(db, COLLECTION), orderBy('wo_number', 'desc'), limit(PAGE_LIMIT))
+    const snap = await getDocs(q)
+    allWOs      = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    lastDocSnap = snap.docs[snap.docs.length - 1] || null
+    allLoaded   = snap.docs.length < PAGE_LIMIT
     buildFilters()
     applyFilters()
+    renderLoadMoreBtn()
   } catch(e) {
     document.getElementById('woBody').innerHTML =
       `<tr><td colspan="18" class="empty">Error loading data: ${e.message}</td></tr>`
   }
 }
+
+async function loadMoreWOs() {
+  if (!lastDocSnap || allLoaded) return
+  try {
+    const q    = query(collection(db, COLLECTION), orderBy('wo_number', 'desc'), limit(PAGE_LIMIT), startAfter(lastDocSnap))
+    const snap = await getDocs(q)
+    const more = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    allWOs      = [...allWOs, ...more]
+    lastDocSnap = snap.docs[snap.docs.length - 1] || lastDocSnap
+    allLoaded   = snap.docs.length < PAGE_LIMIT
+    buildFilters()
+    applyFilters()
+    renderLoadMoreBtn()
+  } catch(e) { toast('Error loading more: ' + e.message, 'error') }
+}
+
+function renderLoadMoreBtn() {
+  let bar = document.getElementById('loadMoreBar')
+  if (!bar) {
+    bar = document.createElement('div')
+    bar.id = 'loadMoreBar'
+    bar.style.cssText = 'text-align:center;padding:8px 16px;background:#fff;border-top:1px solid #eee;font-size:.82rem;color:#555'
+    document.getElementById('paginationBar').insertAdjacentElement('afterend', bar)
+  }
+  if (allLoaded) {
+    bar.innerHTML = `<span>✓ All ${allWOs.length} records loaded</span>`
+  } else {
+    bar.innerHTML = `<span>Showing ${allWOs.length} records (newest first). </span>
+      <button onclick="loadMoreWOs()" style="margin-left:8px;border:1px solid #e65100;background:#fff;color:#e65100;padding:4px 14px;border-radius:4px;cursor:pointer;font-size:.82rem;font-weight:600">
+        Load Older WOs ↓
+      </button>`
+  }
+}
+window.loadMoreWOs = loadMoreWOs
 
 // ── FILTER DROPDOWNS ──────────────────────────────────────────────────────────
 function buildFilters() {
@@ -557,7 +616,7 @@ function renderPagination() {
 function openModal(wo = null) {
   editingId = wo ? wo.id : null
   document.getElementById('modalTitle').textContent = wo ? 'Edit Work Order' : 'New Work Order'
-  document.getElementById('fWoNum').value       = wo ? (wo.wo_number   || '') : generateWONumber()
+  document.getElementById('fWoNum').value       = wo ? (wo.wo_number   || '') : generateWONumberLocal()
   document.getElementById('fIssueDate').value   = wo ? fmtDate(wo.issue_date)  : new Date().toISOString().slice(0,10)
   document.getElementById('fDueLimit').value    = wo ? (wo.due_limit   || '') : ''
   document.getElementById('fAircraft').value    = wo ? (wo.aircraft    || '') : ''
@@ -591,16 +650,27 @@ async function archiveWO(id) {
     await addDoc(collection(db, DEL_COLL), { ...wo, deletedAt: serverTimestamp(), deletedBy: userName })
     await deleteDoc(doc(db, COLLECTION, id))
     toast('WO archived', 'success')
+    lastDocSnap = null; allLoaded = false
     await loadWOs()
   } catch(e) { toast('Error: ' + e.message, 'error') }
 }
 
 // ── SAVE ──────────────────────────────────────────────────────────────────────
 document.getElementById('modalSave').addEventListener('click', async () => {
-  const woNum = document.getElementById('fWoNum').value.trim()
-  if (!woNum) { toast('WO Number required', 'error'); return }
-
   const serialNum = generateSerialNumber()
+
+  let woNum
+  if (editingId) {
+    woNum = document.getElementById('fWoNum').value.trim()
+  } else {
+    try {
+      woNum = await reserveWONumber()
+      document.getElementById('fWoNum').value = woNum
+    } catch(e) {
+      toast('Error reserving WO number: ' + e.message, 'error')
+      return
+    }
+  }
 
   const payload = {
     wo_number:     woNum,
@@ -634,6 +704,7 @@ document.getElementById('modalSave').addEventListener('click', async () => {
       toast('WO created', 'success')
     }
     document.getElementById('modalOverlay').classList.remove('open')
+    lastDocSnap = null; allLoaded = false
     await loadWOs()
   } catch(e) { toast('Error: ' + e.message, 'error') }
 })
