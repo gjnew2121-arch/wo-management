@@ -341,7 +341,7 @@ async function reserveWONumber() {
   const now    = new Date()
   const yy     = String(now.getFullYear()).slice(2)
   const mm     = String(now.getMonth() + 1).padStart(2, '0')
-  const prefix = `GJ${yy}${mm}`
+  const prefix = `SM${yy}${mm}`
   const counterRef = doc(db, 'counters', 'gjet_wo_seq')
 
   const newSeq = await runTransaction(db, async tx => {
@@ -359,12 +359,12 @@ function generateWONumberLocal() {
   const now    = new Date()
   const yy     = String(now.getFullYear()).slice(2)
   const mm     = String(now.getMonth() + 1).padStart(2, '0')
-  const prefix = `GJ${yy}${mm}`
+  const prefix = `SM${yy}${mm}`
   let maxSeq   = 0
   allWOs.forEach(w => {
     if (!w.wo_number) return
     const wo = String(w.wo_number).trim()
-    if (wo.startsWith(`GJ${yy}`) && wo.length === 10) {
+    if (wo.startsWith(`SM${yy}`) && wo.length === 10) {
       const seq = parseInt(wo.slice(6)) || 0
       if (seq > maxSeq) maxSeq = seq
     }
@@ -407,7 +407,7 @@ function sortRecords(arr) {
     if (sortField === 'wo_number') {
       const getWOParts = s => {
         const str = String(s || '').trim()
-        if (str.startsWith('GJ') && str.length === 10) {
+        if (str.startsWith('SM') && str.length === 10) {
           const yy  = parseInt(str.slice(2, 4))
           const mm  = parseInt(str.slice(4, 6))
           const seq = parseInt(str.slice(6))
