@@ -86,7 +86,8 @@
 
 <nav>
   <span class="logo">✈ GainJet WO</span>
-  <a href="index.html">🏠 Home</a>
+  <a href="home.html" style="color:#fff;text-decoration:none;font-size:.88rem;opacity:.85">🏠 Home</a>
+  <a href="admin.html" id="nav-admin" style="display:none;color:#fff;text-decoration:none;font-size:.88rem;opacity:.85">👥 Users</a>
   <div class="spacer"></div>
   <span id="userInfo"></span>
   <button id="logoutBtn">Logout</button>
@@ -755,6 +756,9 @@ onAuthStateChanged(auth, async (user) => {
   document.getElementById('userInfo').textContent = `${userName} (${userRole})`
   if (userRole === 'admin' || userRole === 'editor') {
     document.getElementById('newWOBtn').style.display = ''
+  }
+  if (userRole === 'admin') {
+    document.getElementById('nav-admin').style.display = ''
   }
   await loadWOs()
 })
