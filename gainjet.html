@@ -345,10 +345,20 @@ async function reserveWONumber() {
   const prefix = `GJ${yy}${mm}`
   const counterRef = doc(db, 'counters', 'gainjet_wo_seq')
 
+  // Find max seq from existing WOs in Firestore (not just loaded ones)
+  const lastSnap = await getDocs(query(collection(db, COLLECTION), orderBy('wo_number', 'desc'), limit(1)))
+  let lastWOSeq = 0
+  if (!lastSnap.empty) {
+    const lastWONum = lastSnap.docs[0].data().wo_number || ''
+    if (lastWONum.startsWith('GJ') && lastWONum.length === 10) {
+      lastWOSeq = parseInt(lastWONum.slice(6)) || 0
+    }
+  }
+
   const newSeq = await runTransaction(db, async tx => {
     const snap = await tx.get(counterRef)
-    const current = snap.exists() ? (snap.data().seq || 0) : 0
-    const next = current + 1
+    const counterSeq = snap.exists() ? (snap.data().seq || 0) : 0
+    const next = Math.max(counterSeq, lastWOSeq) + 1
     tx.set(counterRef, { seq: next }, { merge: true })
     return next
   })
