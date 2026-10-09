@@ -670,21 +670,7 @@ async function archiveWO(id) {
 document.getElementById('modalSave').addEventListener('click', async () => {
   const serialNum = generateSerialNumber()
 
-  let woNum
-  if (editingId) {
-    woNum = document.getElementById('fWoNum').value.trim()
-  } else {
-    try {
-      woNum = await reserveWONumber()
-      document.getElementById('fWoNum').value = woNum
-    } catch(e) {
-      toast('Error reserving WO number: ' + e.message, 'error')
-      return
-    }
-  }
-
   const payload = {
-    wo_number:     woNum,
     serial_number: serialNum,
     issue_date:    document.getElementById('fIssueDate').value   || null,
     due_limit:     document.getElementById('fDueLimit').value    || '',
@@ -707,11 +693,36 @@ document.getElementById('modalSave').addEventListener('click', async () => {
 
   try {
     if (editingId) {
+      payload.wo_number = document.getElementById('fWoNum').value.trim()
       await updateDoc(doc(db, COLLECTION, editingId), payload)
       toast('WO updated', 'success')
     } else {
-      payload.createdAt = serverTimestamp()
-      await addDoc(collection(db, COLLECTION), payload)
+      // Atomic: counter + WO creation in one transaction — if either fails, both roll back
+      const counterRef = doc(db, 'counters', 'gjet_wo_seq')
+      const now = new Date()
+      const yy  = String(now.getFullYear()).slice(2)
+      const mm  = String(now.getMonth() + 1).padStart(2, '0')
+      const prefix = `SM${yy}${mm}`
+
+      const lastSnap = await getDocs(query(collection(db, COLLECTION), orderBy('wo_number', 'desc'), limit(1)))
+      let lastWOSeq = 0
+      if (!lastSnap.empty) {
+        const lastWONum = lastSnap.docs[0].data().wo_number || ''
+        if (lastWONum.startsWith('SM') && lastWONum.length === 10) {
+          lastWOSeq = parseInt(lastWONum.slice(6)) || 0
+        }
+      }
+
+      const newDocRef = doc(collection(db, COLLECTION))
+      await runTransaction(db, async tx => {
+        const snap = await tx.get(counterRef)
+        const counterSeq = snap.exists() ? (snap.data().seq || 0) : 0
+        const next = Math.max(counterSeq, lastWOSeq) + 1
+        const woNum = prefix + String(next).padStart(4, '0')
+        tx.set(counterRef, { seq: next }, { merge: true })
+        tx.set(newDocRef, { ...payload, wo_number: woNum, createdAt: serverTimestamp() })
+        document.getElementById('fWoNum').value = woNum
+      })
       toast('WO created', 'success')
     }
     document.getElementById('modalOverlay').classList.remove('open')
